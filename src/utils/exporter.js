@@ -77,4 +77,4 @@ function exportData(data, options = {}) {
   return content;
 }
 
-module.exports = { exportData, toCSV, toJSON, toNDJSON, toMarkdownTable };
+module.exports = { exportData, escapeCsvField, flattenValue, toCSV, toJSON, toNDJSON, toMarkdownTable };

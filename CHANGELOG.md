@@ -2,6 +2,16 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 5.6.0
+
+### Added
+
+- `Sink`, the base every sink shares: buffering up to `batchSize`, a key that decides insert versus update, retries with backoff, an optional flush interval, a `transform`, and counters in `stats()`.
+- `MemorySink`, `FileSink` (JSONL and CSV, with an append mode through `replace: false`), `PostgresSink`, `MySQLSink`, `ClickHouseSink` and `S3Sink`, plus `createSink()` to build one from a descriptor.
+- `batch`, `stream`, `export` and `crawl` accept `sink`. A sink instance belongs to the caller and is left open; a descriptor is created, flushed and closed by the scraper. A stream that is abandoned early still flushes.
+- Postgres builds `ON CONFLICT (...) DO UPDATE`, MySQL builds `ON DUPLICATE KEY UPDATE`, and both accept a composite key. ClickHouse inserts with `FORMAT JSONEachRow` and deduplicates inside the batch. S3 writes one object per key, so a rerun overwrites the same object.
+- Database drivers stay optional. `pg`, `mysql2/promise`, `@clickhouse/client` and `@aws-sdk/client-s3` are required the first time a sink needs them, and a missing one fails with the install command in the message. A client you already have can be injected instead.
+
 ## 5.5.0
 
 ### Added

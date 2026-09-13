@@ -11,7 +11,7 @@
 [![npm version](https://img.shields.io/npm/v/sengkrep?color=black&style=flat-square)](https://www.npmjs.com/package/sengkrep)
 [![node](https://img.shields.io/badge/node-%3E%3D20.18.1-black?style=flat-square)](https://nodejs.org)
 [![dependencies](https://img.shields.io/badge/dependencies-1-black?style=flat-square)](./package.json)
-[![tests](https://img.shields.io/badge/tests-226-black?style=flat-square)](./test)
+[![tests](https://img.shields.io/badge/tests-256-black?style=flat-square)](./test)
 [![license](https://img.shields.io/npm/l/sengkrep?color=black&style=flat-square)](./LICENSE)
 
 </div>
@@ -24,6 +24,7 @@
 - [Three ways to read a page](#three-ways-to-read-a-page)
 - [Step by step](#step-by-step)
 - [Scheduling](#scheduling)
+- [Data sinks](#data-sinks)
 - [Network capture](#network-capture)
 - [Core API](#core-api)
 - [Schema syntax](#schema-syntax)
@@ -53,6 +54,7 @@
 - proxy rotation, cookie jar, session pool, CSRF handling, token refresh
 - resumable crawling, a distributed queue, and three storage backends
 - a scheduler with persistent job state, so a cadence survives a restart
+- data sinks with upsert by key, to Postgres, MySQL, ClickHouse, S3, a file or memory
 - network capture, so you can find the API behind a page without opening DevTools
 - TypeScript definitions for the full public surface
 
@@ -290,7 +292,18 @@ await scheduler.start();
 
 The schedule and the last run are on disk, so after a restart `start()` picks the jobs back up. Details in [Scheduling](#scheduling).
 
-### 9. Close the scraper
+### 9. Send the rows somewhere
+
+```js
+const sink = sengkrep.createSink({ type: 'postgres', table: 'items', key: 'id' });
+
+await scraper.batch(urls, { id: '.sku', name: 'h1', price: '.price' }, { sink });
+await sink.close();
+```
+
+Rows are written as they arrive, a row that carries an existing key replaces the stored one, and one failing batch is retried before it is reported. That is what the next section covers.
+
+### 10. Close the scraper
 
 ```js
 await scraper.close();
@@ -415,6 +428,126 @@ sengkrep.cron.scheduleLabel({ every: '6h' }); // 'every 6h'
 ```
 
 Nothing in the scheduler is timezone aware. Schedules are evaluated in UTC, and a `Date` or ISO string in `at` carries its own offset.
+
+## Data sinks
+
+Extraction produces rows. A sink moves them somewhere, in batches, with a key that decides whether a row is an insert or an update.
+
+```js
+const sink = sengkrep.createSink({
+  type: 'postgres',
+  table: 'items',
+  key: 'sku',
+  batchSize: 500,
+  connection: { connectionString: process.env.DATABASE_URL },
+});
+
+await scraper.batch(urls, { sku: '.sku', name: 'h1', price: '.price' }, { sink });
+await sink.close();
+```
+
+```sql
+INSERT INTO "items" ("sku", "name", "price") VALUES ($1, $2, $3), ($4, $5, $6)
+ON CONFLICT ("sku") DO UPDATE SET "name" = EXCLUDED."name", "price" = EXCLUDED."price"
+```
+
+That statement is what the Postgres sink builds, and the same shape is available without a database.
+
+| Sink | Driver | What `key` does |
+|---|---|---|
+| `MemorySink` | none | a row with an existing key replaces the stored one |
+| `FileSink` (JSONL) | none | the file is loaded, the row is replaced, the file is rewritten |
+| `FileSink` (CSV) | none | the same, and the header is written once |
+| `PostgresSink` | `pg` | `ON CONFLICT (...) DO UPDATE` |
+| `MySQLSink` | `mysql2/promise` | `ON DUPLICATE KEY UPDATE` |
+| `ClickHouseSink` | `@clickhouse/client` | deduplicates inside the batch; the table needs `ReplacingMergeTree` for real upsert |
+| `S3Sink` | `@aws-sdk/client-s3` | one object per key, so a rerun overwrites that object |
+
+No driver is a dependency of this package. Each one is required the first time it is needed, and a missing one fails with the exact `npm install` command in the message. You can also inject a client and skip the driver entirely, which is how the test suite exercises every statement without a database.
+
+### Options
+
+| Option | Default | Meaning |
+|---|---|---|
+| `key` | none | Field name, or an array of them for a composite key. Without a key every row is appended |
+| `replace` | `true` | When `false`, rows are appended and the key is ignored |
+| `batchSize` | `500` | Buffered rows before a flush is triggered |
+| `flushInterval` | none | Milliseconds between automatic flushes for rows that arrive slowly |
+| `retries` | `2` | Extra attempts for a failed batch, with exponential backoff |
+| `retryDelayMs` | `200` | Base delay for that backoff |
+| `transform` | none | Runs on each row before the key is read |
+| `onError` | none | Called when a timer-driven flush fails |
+| `columns` | discovered | Explicit column list for the SQL, file and S3 sinks |
+
+### Behaviour
+
+A row whose key is missing stops the batch with a clear error rather than landing somewhere unexpected. Two rows with the same key in one buffer collapse to the last one, and `stats().duplicates` counts that. A batch that keeps failing after `retries` throws, and the thrown error is the last real error, not a wrapper.
+
+Buffered rows are held until `batchSize` is reached, a `flushInterval` fires, or you call `flush()`. `close()` flushes what is left, stops the timer and marks the sink closed, after which `write()` throws.
+
+```js
+const sink = sengkrep.createSink({ type: 'memory', key: 'id' });
+
+await sink.write([{ id: 1, name: 'a' }, { id: 1, name: 'b' }]);
+await sink.flush();
+
+sink.rows;      // [{ id: 1, name: 'b' }]
+sink.stats();   // { written: 1, batches: 1, duplicates: 1, retried: 0, buffered: 0, closed: false, ... }
+```
+
+### Passing a sink to the scraper
+
+`batch`, `stream`, `export` and `crawl` all take a `sink`. Either form works, and the difference matters.
+
+| What you pass | Ownership |
+|---|---|
+| A sink instance, for example `new sengkrep.MemorySink({ key: 'id' })` | Yours. The scraper writes and flushes it, and leaves it open |
+| A descriptor, for example `{ type: 'jsonl', path: 'out.jsonl', key: 'id' }` | The scraper creates it, flushes it and closes it when the run ends |
+
+```js
+await scraper.batch(urls, schema, { sink: { type: 'jsonl', path: 'items.jsonl', key: 'sku' } });
+
+for await (const { data, error } of scraper.stream(urls, schema, { sink: { type: 's3', bucket: 'data', prefix: 'items', key: 'sku' } })) {
+  if (error) continue;
+  console.log(data.sku);
+}
+```
+
+A stream that is abandoned early still flushes, because the flush sits in a `finally`. Crawl writes each page as it is visited, so a long crawl does not have to hold every result in memory.
+
+### File sinks
+
+`FileSink` infers the format from the extension. With `replace` on it loads the file once, keeps the keys in memory and rewrites the file on each flush, which is convenient up to a few hundred thousand rows and the wrong tool past that. Set `replace: false` to append instead, and give `columns` explicitly if later rows do not carry the same fields.
+
+```js
+const sink = new sengkrep.FileSink('items.csv', { key: 'sku' });
+await sink.write({ sku: 'A1', name: 'Roti' });
+await sink.close();
+
+fs.readFileSync('items.csv', 'utf8'); // 'sku,name\nA1,Roti\n'
+```
+
+A CSV file that cannot be parsed stops the batch, and the file is left exactly as it was.
+
+### Database and object storage
+
+```js
+new sengkrep.PostgresSink({ table: 'items', key: 'sku', connection: { connectionString } });
+new sengkrep.MySQLSink({ table: 'items', key: 'sku', connection: { uri } });
+new sengkrep.ClickHouseSink({ table: 'items', connection: { url, username, password } });
+new sengkrep.S3Sink({ bucket: 'data', prefix: 'items', key: 'sku', format: 'json' });
+```
+
+Any client you already have can be injected, and injected clients are never closed by the sink.
+
+```js
+const sink = new sengkrep.PostgresSink({ table: 'items', key: 'sku', client: existingPool });
+const mysql = new sengkrep.MySQLSink({ table: 'items', key: 'sku', client: pool });
+const ch = new sengkrep.ClickHouseSink({ table: 'items', client: chClient });
+const s3 = new sengkrep.S3Sink({ bucket: 'data', key: 'sku', put: async ({ key, body, contentType }) => upload(key, body, contentType) });
+```
+
+ClickHouse has no upsert, so the sink deduplicates within a batch and inserts with `FORMAT JSONEachRow`. Use a `ReplacingMergeTree(key)` table and query with `FINAL` if you need one row per key at read time. S3 has no upsert either, and does not need one: with a key set, each row becomes its own object named from that key, so writing the same key again replaces the same object.
 
 ## Network capture
 
@@ -810,6 +943,9 @@ Operations and storage:
 | `DistributedQueue` | Multi-worker queue with leases, priorities, per-worker streaks and a dead-letter list |
 | `Scheduler` | Runs stored jobs on cron, interval or one-shot schedules, with catch-up and skip policies |
 | `JobStore` | Persistent job records behind the same `file`, `memory` and `sqlite` backends as the cache |
+| `Sink` | Batching, key-based upsert, retries and stats shared by every sink |
+| `MemorySink`, `FileSink` | In-memory rows, or JSONL and CSV files with an append mode |
+| `PostgresSink`, `MySQLSink`, `ClickHouseSink`, `S3Sink` | Driver-backed sinks behind `createSink()` |
 | `Storage` / `MemoryStorage` / `SqliteStorage` | Backends behind one `createStorage()` factory |
 | `PluginSystem` | `beforeRequest`, `afterExtract` and `onError` hooks, with `timestamp`, `logToFile` and `fieldMapper` built in |
 | `ProgressBar` | Terminal progress for long runs |
@@ -1061,7 +1197,7 @@ Node 18 is not supported. The cheerio dependency pulls `undici`, which needs Nod
 
 ![Test suite results per file](docs/test-results.svg)
 
-226 tests run against local fixture servers, so the suite needs no external network access and works offline, in CI, and on machines where outbound traffic is restricted.
+256 tests run against local fixture servers, so the suite needs no external network access and works offline, in CI, and on machines where outbound traffic is restricted.
 
 ```bash
 npm test            # every test file
@@ -1084,6 +1220,7 @@ npm run bench       # local micro-benchmarks
 | `10-renderer-and-codegen.js` | CDP renderer, capture to schema and script, WebSocket frames, cookie import |
 | `11-single-flight-and-cache.js` | Single-flight sharing, cache hit and stale behaviour, background revalidation, `flush()` |
 | `12-scheduler.js` | Cron parsing and rejection, durations, the job store and its index, tick and runNow, catch-up after a restart, one-shot jobs, concurrency, events |
+| `13-sinks.js` | Batching, key and composite-key upserts, retries, transforms, JSONL and CSV files, generated SQL per dialect, ClickHouse inserts, S3 object keys, and sink wiring into batch, stream, export and crawl |
 
 The two images at the top of this file are generated from the same fixtures by `node docs/charts.js`. Nothing in them is typed in by hand.
 
@@ -1091,6 +1228,7 @@ The two images at the top of this file are generated from the same fixtures by `
 
 | Version | Changes |
 |---|---|
+| 5.6.0 | Data sinks with upsert by key: `Sink`, `MemorySink`, `FileSink` (JSONL and CSV), `PostgresSink`, `MySQLSink`, `ClickHouseSink`, `S3Sink` and `createSink()`. `batch`, `stream`, `export` and `crawl` accept a `sink`, either as an instance you own or a descriptor the scraper creates and closes |
 | 5.5.0 | `Scheduler` and `JobStore` run jobs on cron, interval or one-shot schedules with persistent state, `catchUp` for runs missed while the process was down, `runNow`, `pause` and `resume`; the fingerprint now sends navigation headers only for actual page loads and fetch headers for JSON or body-bearing requests; caller headers override generated ones case-insensitively |
 | 5.4.0 | `singleFlight` merges identical in-flight requests, `cache.staleWhileRevalidate` and `cache.staleTtl` serve stale entries while refreshing them in the background, `res.stale` marks a stale response, and `scraper.flush()` waits for pending revalidations |
 | 5.3.1 | Corrected `engines.node` to `>=20.18.1`, the version the package can actually load, and dropped Node 18 from CI |
@@ -1152,6 +1290,8 @@ On a stale cache hit the request returns immediately and the refresh runs throug
 **Fingerprints.** One browser profile drives the User-Agent and client hints together, so `Sec-CH-UA` never contradicts the UA. `Accept-Encoding` only advertises `zstd` when the running Node build can decompress it. `rotateUAOnEachRequest` defaults to `false`, because real browsers keep one identity for a session.
 
 **Request shape.** The fingerprint matches the kind of request being made. A plain GET looks like a page load: `Sec-Fetch-Dest: document`, `Sec-Fetch-Mode: navigate`, `Sec-Fetch-User: ?1`, `Upgrade-Insecure-Requests: 1`, and an HTML `Accept`. A request with a JSON `Accept` header, or any request with a body, looks like a fetch: `Sec-Fetch-Dest: empty`, `Sec-Fetch-Mode: cors`, no `Sec-Fetch-User`, no `Upgrade-Insecure-Requests`, and `*/*` or a JSON `Accept`. A `Referer` header also sets `Sec-Fetch-Site` from the two origins. Headers you pass override the generated ones case-insensitively, so `user-agent` and `User-Agent` cannot both end up on the wire.
+
+**Sinks.** A batch is retried before it is reported as failed, and a row missing its key field stops that batch instead of being written. Drivers are loaded lazily and never installed for you. File sinks with `replace` rewrite the whole file on every flush and keep the key set in memory, which is why the database sinks exist.
 
 **Scheduling.** Schedules are UTC and use five cron fields. A job whose slot arrives while it is still running is skipped, a missed run is either skipped once or run once depending on `catchUp`, and a one-shot job disables itself after it runs.
 

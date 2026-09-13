@@ -48,6 +48,7 @@ const { extractJsonLd, extractMicrodata, extractDataAttributes } = require('./ut
 const { extractScripts }                   = require('./utils/scriptExtractor');
 const { extractLinks, UrlDeduplicator }    = require('./utils/urlUtils');
 const StreamWriter                         = require('./utils/streamWriter');
+const { createSink }                      = require('./sinks');
 const contentSafety                        = require('./utils/contentSafety');
 
 class Sengkrep {
@@ -581,6 +582,28 @@ class Sengkrep {
     }
   }
 
+  _resolveSink(sink) {
+    if (!sink) return null;
+    if (typeof sink.write === 'function') return { sink, owned: false };
+    return { sink: createSink(sink), owned: true };
+  }
+
+  _withoutSink(options) {
+    if (!options || !options.sink) return options;
+    const { sink, ...rest } = options;
+    return rest;
+  }
+
+  async _sinkFinish(target) {
+    if (!target) return null;
+    try {
+      await target.sink.flush();
+    } finally {
+      if (target.owned) await target.sink.close();
+    }
+    return target.sink.stats();
+  }
+
   async batch(urls, schema, options = {}) {
     const {
       concurrency = 3,
@@ -593,6 +616,8 @@ class Sengkrep {
 
     const queue = randomOrder ? [...urls].sort(() => Math.random() - 0.5) : urls;
     const bar   = progressBar ? new ProgressBar({ total: queue.length, label: 'scraping' }) : null;
+    const sink  = this._resolveSink(options.sink);
+    const requestOptions = this._withoutSink(options);
 
     const results = [];
 
@@ -600,7 +625,7 @@ class Sengkrep {
       const chunk = queue.slice(i, i + concurrency);
 
       const settled = await Promise.allSettled(
-        chunk.map(url => this.extract(url, schema, { ...options, strict }))
+        chunk.map(url => this.extract(url, schema, { ...requestOptions, strict }))
       );
 
       for (let j = 0; j < settled.length; j++) {
@@ -608,6 +633,7 @@ class Sengkrep {
         const r   = settled[j];
         if (r.status === 'fulfilled') {
           results.push({ url, data: r.value, error: null });
+          if (sink) await sink.sink.write(r.value);
         } else {
           this.logger.error(`Failed: ${url} — ${r.reason.message}`);
           results.push({ url, data: null, error: r.reason });
@@ -626,29 +652,39 @@ class Sengkrep {
     }
 
     if (bar) bar.finish();
+    if (sink) await this._sinkFinish(sink);
 
     return results;
   }
 
   async *stream(urls, schema, options = {}) {
     const { concurrency = 3, delay = 800 } = options;
+    const sink = this._resolveSink(options.sink);
+    const requestOptions = this._withoutSink(options);
 
-    for (let i = 0; i < urls.length; i += concurrency) {
-      const chunk = urls.slice(i, i + concurrency);
-      const settled = await Promise.allSettled(chunk.map(url => this.extract(url, schema, options)));
+    try {
+      for (let i = 0; i < urls.length; i += concurrency) {
+        const chunk = urls.slice(i, i + concurrency);
+        const settled = await Promise.allSettled(chunk.map(url => this.extract(url, schema, requestOptions)));
 
-      for (let j = 0; j < settled.length; j++) {
-        const url = chunk[j];
-        const r   = settled[j];
-        yield r.status === 'fulfilled'
-          ? { url, data: r.value, error: null }
-          : { url, data: null, error: r.reason };
+        for (let j = 0; j < settled.length; j++) {
+          const url = chunk[j];
+          const r   = settled[j];
+
+          if (r.status === 'fulfilled' && sink) await sink.sink.write(r.value);
+
+          yield r.status === 'fulfilled'
+            ? { url, data: r.value, error: null }
+            : { url, data: null, error: r.reason };
+        }
+
+        const remaining = urls.length - (i + concurrency);
+        if (remaining > 0 && delay > 0) {
+          await this.fingerprint.humanDelay(delay * 0.8, delay * 1.4);
+        }
       }
-
-      const remaining = urls.length - (i + concurrency);
-      if (remaining > 0 && delay > 0) {
-        await this.fingerprint.humanDelay(delay * 0.8, delay * 1.4);
-      }
+    } finally {
+      if (sink) await this._sinkFinish(sink);
     }
   }
 
@@ -784,6 +820,7 @@ class Sengkrep {
   }
 
   async export(input, schema, options = {}) {
+    const sink = this._resolveSink(options.sink);
     let data;
 
     if (options.pagination) {
@@ -802,11 +839,17 @@ class Sengkrep {
       data = input;
     }
 
+    if (sink) {
+      await sink.sink.write(data);
+      await this._sinkFinish(sink);
+    }
+
     return exportData(data, options);
   }
 
   crawl(options = {}) {
     const queue = new CrawlQueue(options);
+    const sink  = this._resolveSink(options.sink);
 
     const visitFn = async (url) => {
       if (options.respectRobotsTxt) {
@@ -823,6 +866,8 @@ class Sengkrep {
       const $    = this.extractor.load(res.body);
       const { data } = this.extractor.extract(res.body, options.schema ?? {});
       let links = extractLinks($, url, options.linkOptions ?? {});
+
+      if (sink) await sink.sink.write(data);
 
       if (this.contentDedup) {
         const check = this.contentDedup.check(res.body);
@@ -845,8 +890,8 @@ class Sengkrep {
 
     return {
       queue,
-      start:  () => queue.start(visitFn),
-      resume: () => queue.resume(visitFn),
+      start:  async () => { const results = await queue.start(visitFn); await this._sinkFinish(sink); return results; },
+      resume: async () => { const results = await queue.resume(visitFn); await this._sinkFinish(sink); return results; },
       pause:  () => queue.pause(),
       on:     (event, fn) => queue.on(event, fn),
       results: () => queue.results(),

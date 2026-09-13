@@ -20,6 +20,9 @@ import type {
   SchedulerStats,
   Sengkrep,
   SengkrepOptions,
+  Sink,
+  SinkDescriptor,
+  SinkStats,
   SingleFlightStats,
 } from '../../index';
 
@@ -151,3 +154,37 @@ async function scheduled(): Promise<SchedulerStats> {
 }
 
 void scheduled;
+
+async function toSink(): Promise<SinkStats> {
+  const descriptor: SinkDescriptor = { type: 'postgres', table: 'items', key: 'id' };
+  const sink: Sink = sengkrep.createSink(descriptor);
+
+  await sink.write({ id: 1, name: 'a' });
+  await sink.write([{ id: 2, name: 'b' }]);
+  await sink.upsert({ id: 2, name: 'c' });
+  await sink.flush();
+
+  const memory = new sengkrep.MemorySink({ key: ['sku', 'locale'] });
+  await memory.write({ sku: 'X', locale: 'en' });
+  void memory.rows;
+
+  const file = new sengkrep.FileSink('/tmp/out.jsonl', { key: 'id', batchSize: 10 });
+  void file.format;
+  void file.count();
+
+  const s3 = new sengkrep.S3Sink({ bucket: 'b', prefix: 'runs', key: 'id', put: async (request) => request.key });
+  void s3.objectKeyFor({ id: 1 });
+
+  return sink.close();
+}
+
+void toSink;
+
+async function scrapeIntoSink(): Promise<number> {
+  const sink = new sengkrep.MemorySink({ key: 'title' });
+  const results = await client.batch(['https://example.com'], { title: 'h1' }, { sink, concurrency: 2 });
+  await client.export(['https://example.com'], { title: 'h1' }, { sink, format: 'csv' });
+  return results.length;
+}
+
+void scrapeIntoSink;

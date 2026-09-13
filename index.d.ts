@@ -141,6 +141,7 @@ export interface BatchOptions extends ExtractOptions {
   randomOrder?: boolean;
   progressBar?: boolean;
   onProgress?: (done: number, total: number) => void;
+  sink?: SinkInput;
 }
 
 export interface BatchResult<T = Record<string, unknown>> {
@@ -159,6 +160,7 @@ export interface PaginationConfig {
 
 export interface CrawlOptions {
   seed: string | string[];
+  sink?: SinkInput;
   schema?: Record<string, SchemaField>;
   follow?: RegExp | ((url: string) => boolean);
   maxUrls?: number;
@@ -995,6 +997,175 @@ export class StreamWriter {
   close(): Promise<void>;
 }
 
+export type SinkKey = string | string[] | null;
+
+export interface SinkOptions {
+  key?: SinkKey;
+  replace?: boolean;
+  batchSize?: number;
+  flushInterval?: number | null;
+  retries?: number;
+  retryDelayMs?: number;
+  transform?: (row: Record<string, unknown>) => Record<string, unknown>;
+  onError?: (error: Error) => void;
+}
+
+export interface SinkStats {
+  written: number;
+  batches: number;
+  failed: number;
+  retried: number;
+  duplicates: number;
+  buffered: number;
+  closed: boolean;
+}
+
+export class Sink<T = Record<string, unknown>> {
+  constructor(options?: SinkOptions);
+  key: SinkKey;
+  keys: string[];
+  replace: boolean;
+  batchSize: number;
+  flushInterval: number | null;
+  retries: number;
+  retryDelayMs: number;
+  readonly size: number;
+  keyOf(row: T): string;
+  write(rows: T | T[]): Promise<number>;
+  upsert(rows: T | T[]): Promise<number>;
+  flush(): Promise<number>;
+  close(): Promise<SinkStats>;
+  stats(): SinkStats;
+}
+
+export class MemorySink<T = Record<string, unknown>> extends Sink<T> {
+  rows: T[];
+  readonly length: number;
+  clear(): this;
+}
+
+export type FileSinkFormat = 'jsonl' | 'csv';
+
+export interface FileSinkOptions extends SinkOptions {
+  format?: FileSinkFormat;
+  columns?: string[];
+}
+
+export class FileSink<T = Record<string, unknown>> extends Sink<T> {
+  constructor(path: string, options?: FileSinkOptions);
+  filePath: string;
+  format: FileSinkFormat;
+  columns: string[] | null;
+  rows: T[];
+  readonly appendOnly: boolean;
+  count(): number;
+}
+
+export interface SqlSinkOptions extends SinkOptions {
+  table: string;
+  client?: unknown;
+  pool?: unknown;
+  columns?: string[];
+  connection?: Record<string, unknown>;
+  conflictTarget?: string;
+  dialect?: 'postgres' | 'mysql';
+}
+
+export interface SqlStatement {
+  text: string;
+  values: unknown[];
+  columns: string[];
+}
+
+export class SqlSink<T = Record<string, unknown>> extends Sink<T> {
+  constructor(options: SqlSinkOptions);
+  dialect: 'postgres' | 'mysql';
+  table: string;
+  client: unknown;
+  columns: string[] | null;
+  buildStatement(batch: T[]): SqlStatement;
+  upsertClause(columns: string[]): string;
+  query(text: string, values: unknown[]): Promise<unknown>;
+}
+
+export interface PostgresSinkOptions extends Omit<SqlSinkOptions, 'dialect'> {
+  driver?: string;
+}
+
+export class PostgresSink<T = Record<string, unknown>> extends SqlSink<T> {
+  constructor(options: PostgresSinkOptions);
+  driver: string;
+}
+
+export interface MySQLSinkOptions extends Omit<SqlSinkOptions, 'dialect'> {
+  driver?: string;
+}
+
+export class MySQLSink<T = Record<string, unknown>> extends SqlSink<T> {
+  constructor(options: MySQLSinkOptions);
+  driver: string;
+}
+
+export interface ClickHouseSinkOptions extends SinkOptions {
+  table: string;
+  client?: unknown;
+  columns?: string[];
+  connection?: Record<string, unknown>;
+  driver?: string;
+}
+
+export class ClickHouseSink<T = Record<string, unknown>> extends Sink<T> {
+  constructor(options: ClickHouseSinkOptions);
+  table: string;
+  driver: string;
+}
+
+export type S3SinkFormat = 'json' | 'jsonl' | 'csv';
+
+export interface S3PutRequest {
+  key: string;
+  body: string;
+  contentType: string;
+  bucket: string | null;
+  format: S3SinkFormat;
+}
+
+export interface S3SinkOptions extends SinkOptions {
+  bucket?: string;
+  format?: S3SinkFormat;
+  prefix?: string;
+  client?: unknown;
+  connection?: Record<string, unknown>;
+  driver?: string;
+  put?: (request: S3PutRequest) => Promise<unknown> | unknown;
+}
+
+export class S3Sink<T = Record<string, unknown>> extends Sink<T> {
+  constructor(options: S3SinkOptions);
+  bucket: string | null;
+  format: S3SinkFormat;
+  prefix: string;
+  client: unknown;
+  readonly extension: string;
+  objectKeyFor(row: T): string;
+  batchKey(): string;
+  serializeBatch(batch: T[]): string;
+  putObject(key: string, body: string): Promise<string>;
+}
+
+export type SinkDescriptor =
+  | ({ type: 'memory' } & SinkOptions)
+  | ({ type: 'file' | 'jsonl' | 'csv'; path?: string; file?: string } & FileSinkOptions)
+  | ({ type: 'postgres' | 'postgresql' | 'pg' } & PostgresSinkOptions)
+  | ({ type: 'mysql' | 'mariadb' } & MySQLSinkOptions)
+  | ({ type: 'clickhouse' } & ClickHouseSinkOptions)
+  | ({ type: 's3' } & S3SinkOptions);
+
+export type SinkInput = Sink | SinkDescriptor;
+
+export function createSink(descriptor: SinkDescriptor): Sink;
+export function createSink(sink: Sink): Sink;
+
 export interface DistributedAdapter {
   enqueue(items: unknown[]): Promise<void>;
   dequeue(): Promise<unknown | null>;
@@ -1648,6 +1819,26 @@ export interface SengkrepStatic {
   DistributedQueue: typeof DistributedQueue;
   MemoryAdapter: typeof MemoryAdapter;
   StreamWriter: typeof StreamWriter;
+  Sink: typeof Sink;
+  MemorySink: typeof MemorySink;
+  FileSink: typeof FileSink;
+  SqlSink: typeof SqlSink;
+  PostgresSink: typeof PostgresSink;
+  MySQLSink: typeof MySQLSink;
+  ClickHouseSink: typeof ClickHouseSink;
+  S3Sink: typeof S3Sink;
+  sinks: {
+    Sink: typeof Sink;
+    MemorySink: typeof MemorySink;
+    FileSink: typeof FileSink;
+    SqlSink: typeof SqlSink;
+    PostgresSink: typeof PostgresSink;
+    MySQLSink: typeof MySQLSink;
+    ClickHouseSink: typeof ClickHouseSink;
+    S3Sink: typeof S3Sink;
+    createSink: typeof createSink;
+  };
+  createSink: typeof createSink;
   UrlDeduplicator: typeof UrlDeduplicator;
   Retry: typeof Retry;
   Fetcher: typeof Fetcher;

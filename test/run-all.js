@@ -14,6 +14,7 @@ const FILES = [
   '10-renderer-and-codegen.js',
   '11-single-flight-and-cache.js',
   '12-scheduler.js',
+  '13-sinks.js',
 ];
 
 let failed = 0;

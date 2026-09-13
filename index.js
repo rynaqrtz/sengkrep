@@ -52,6 +52,7 @@ const { extractJsonLd, extractMicrodata, extractDataAttributes } = require('./sr
 const { extractScripts, extractSourceMapUrl, beautify } = require('./src/utils/scriptExtractor');
 const { normalizeUrl, extractLinks, UrlDeduplicator } = require('./src/utils/urlUtils');
 const StreamWriter                         = require('./src/utils/streamWriter');
+const sinks                                = require('./src/sinks');
 const contentSafety                        = require('./src/utils/contentSafety');
 const encodingUtils                        = require('./src/utils/encodingUtils');
 
@@ -139,6 +140,16 @@ sengkrep.inferFields      = inferFields;
 sengkrep.detectRepeatingContainers = detectRepeatingContainers;
 sengkrep.UrlDeduplicator  = UrlDeduplicator;
 sengkrep.StreamWriter     = StreamWriter;
+sengkrep.Sink             = sinks.Sink;
+sengkrep.MemorySink       = sinks.MemorySink;
+sengkrep.FileSink         = sinks.FileSink;
+sengkrep.SqlSink          = sinks.SqlSink;
+sengkrep.PostgresSink     = sinks.PostgresSink;
+sengkrep.MySQLSink        = sinks.MySQLSink;
+sengkrep.ClickHouseSink   = sinks.ClickHouseSink;
+sengkrep.S3Sink           = sinks.S3Sink;
+sengkrep.createSink       = sinks.createSink;
+sengkrep.sinks            = sinks;
 sengkrep.plugins          = builtinPlugins;
 sengkrep.cheerio          = cheerio;
 
