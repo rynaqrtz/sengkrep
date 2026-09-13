@@ -33,22 +33,33 @@ Usage:
   sengkrep scrape <url> --schema '<json>' [options]
   sengkrep discover <origin>
   sengkrep capture <har|browser|proxy|playwright> [target] [options]
+  sengkrep capture cookies <cookies.txt> [--domain <host>]
+  sengkrep cookies <cookies.txt> [--domain <host>]
 
 Capture options:
   --out <path>          Write a HAR file with every captured request
   --json                Print the full analysis as JSON
   --all                 Include static assets, not only API calls
   --code                Print a fetch() snippet for the first endpoint
+  --schema              Print an extraction schema for the first JSON endpoint
+  --script              Print a runnable scraper script for the first JSON endpoint
+  --script-out <path>   Write that script to a file instead of stdout
   --cdp <host>          DevTools endpoint (default: http://127.0.0.1:9222)
   --port <n>            Local capture proxy port (default: 8899)
   --seconds <n>         How long to keep the proxy open (default: 30)
   --headless=false      Show the browser when using playwright
 
+Cookie options:
+  --domain <host>       Only keep cookies for this host (repeatable with commas)
+  --out <path>          Write an exported cookie jar as JSON
+
 Capture examples:
   sengkrep capture har session.har --out api.har --json
+  sengkrep capture har session.har --schema --script-out scraper.js
   sengkrep capture browser https://app.example.com --cdp http://127.0.0.1:9222
   sengkrep capture proxy --port 8899 --seconds 60 --out session.har
   sengkrep capture playwright https://app.example.com --out session.har
+  sengkrep capture cookies cookies.txt --domain example.com
 
 Options for scrape:
   --schema <json>       Required. Extraction schema as JSON string
@@ -147,9 +158,28 @@ async function main() {
     return;
   }
 
-  if (command === 'capture') {
+  if (command === 'capture' || command === 'cookies') {
     const [source, target] = args._;
     if (!source) throw new Error('Usage: sengkrep capture <har|browser|proxy|playwright> [target]');
+
+    if (command === 'cookies' || source === 'cookies') {
+      const file = command === 'cookies' ? source : target;
+      if (!file) throw new Error('Usage: sengkrep capture cookies <cookies.txt> [--domain example.com]');
+
+      const domains = typeof args.domain === 'string'
+        ? args.domain.split(',').map((domain) => domain.trim()).filter(Boolean)
+        : null;
+      const parsed = sengkrep.capture.cookies.parseCookieFile(fs.readFileSync(file, 'utf8'));
+      const kept = domains ? parsed.filter((cookie) => domains.includes(cookie.domain)) : parsed;
+
+      if (args.out) {
+        fs.writeFileSync(args.out, `${JSON.stringify(kept, null, 2)}\n`);
+        console.log(`Wrote ${kept.length} cookie(s) to ${args.out}`);
+      } else {
+        process.stdout.write(`${JSON.stringify(kept, null, 2)}\n`);
+      }
+      return;
+    }
 
     const includeStatic = Boolean(args.all);
     let capture;
@@ -187,15 +217,39 @@ async function main() {
     const endpoints = capture.endpoints({ all: includeStatic });
     const summary = capture.summary();
 
-    if (args.code && endpoints.length > 0) {
-      const first = capture.api().entries.find((entry) => entry.url.startsWith(endpoints[0].template.split(':id')[0]));
-      if (first) console.log(`${capture.toFetchCode(first)}\n`);
-    }
+    const jsonEndpoint = endpoints.find((endpoint) => endpoint.schema) ?? null;
+    const prefix = (endpoints[0]?.template ?? '').split(':id')[0];
+    const apiEntries = capture.api().entries;
+    const firstApiEntry = apiEntries.find((entry) => prefix && entry.url.startsWith(prefix)) ?? apiEntries[0] ?? null;
 
     if (args.out) {
       capture.saveHar(args.out);
       console.log(`HAR written to ${args.out}`);
     }
+
+    if (args.code && firstApiEntry) {
+      console.log(`${capture.toFetchCode(firstApiEntry)}\n`);
+    }
+
+    const wantsCode = Boolean(args.schema || args.script || args['script-out']);
+
+    if (args.schema || args.script || args['script-out']) {
+      if (!jsonEndpoint) throw new Error('No JSON endpoint in this capture; re-run with --all or check the source');
+
+      if (args.schema) process.stdout.write(`${JSON.stringify(capture.toSchema(jsonEndpoint), null, 2)}\n`);
+
+      if (args.script || args['script-out']) {
+        const script = capture.toScript(jsonEndpoint);
+        if (args['script-out']) {
+          fs.writeFileSync(args['script-out'], script);
+          console.log(`Script written to ${args['script-out']}`);
+        } else {
+          process.stdout.write(script);
+        }
+      }
+    }
+
+    if (wantsCode && !args.json) return;
 
     if (args.json) {
       process.stdout.write(`${JSON.stringify(capture.toJSON({ all: includeStatic }), null, 2)}\n`);

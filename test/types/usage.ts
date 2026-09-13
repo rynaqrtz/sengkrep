@@ -1,9 +1,15 @@
 import sengkrep from '../../index';
 import type {
+  CaptureCookie,
   CaptureEntry,
   CaptureEndpoint,
   CaptureJsonSchema,
+  CaptureScriptOptions,
   CaptureSummary,
+  CaptureWebSocketFrameRecord,
+  CdpRenderer,
+  CdpRenderResult,
+  CookieJar,
   PaginationNext,
   RawResponse,
   Sengkrep,
@@ -58,6 +64,25 @@ const schema: CaptureJsonSchema | null | undefined = first?.schema;
 const summary: CaptureSummary = capture.summary();
 const rest: Buffer = sengkrep.capture.ws.decodeFrames(Buffer.from([0x81, 0x01, 0x61])).rest;
 
+const renderer: CdpRenderer = sengkrep.renderers.cdp({ idleMs: 100, waitForSelector: '#app' });
+const rendered: Promise<string | CdpRenderResult> = renderer.render('https://app.example.com/page');
+
+const paths: Record<string, string> = capture.toSchema(entry);
+const scriptOptions: CaptureScriptOptions = { require: 'sengkrep', logLevel: 'error', maxDepth: 3 };
+const script: string = capture.toScript(entry, scriptOptions);
+const frames: CaptureWebSocketFrameRecord[] = capture.frames(entry);
+const direction: 'sent' | 'received' | undefined = frames[0]?.direction;
+
+const jar: CookieJar = new sengkrep.CookieJar();
+const imported: Promise<number> = sengkrep.importCookies(jar, {
+  from: 'file',
+  path: 'cookies.txt',
+  domains: ['example.com'],
+});
+const parsedCookies: CaptureCookie[] = sengkrep.parseCookieFile('sid=1');
+const codegenPaths: Record<string, string> = sengkrep.capture.codegen.jsonPathsFromSchema({ type: 'object', properties: { id: { type: 'integer' } } });
+const cookieHelpers: typeof sengkrep.capture.cookies = sengkrep.capture.cookies;
+
 void fetchPage;
 void extractPage;
 void nextUrl;
@@ -70,3 +95,11 @@ void headers;
 void schema;
 void summary;
 void rest;
+void rendered;
+void paths;
+void script;
+void direction;
+void imported;
+void parsedCookies;
+void codegenPaths;
+void cookieHelpers;

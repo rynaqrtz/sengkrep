@@ -1,6 +1,7 @@
 const fs = require('fs');
 const { createEntry, isApiEntry } = require('./entry');
-const { groupEndpoints, summarize, toCurl, toFetchCode } = require('./analyze');
+const { groupEndpoints, summarize, toCurl, toFetchCode, urlTemplate } = require('./analyze');
+const { buildScript, jsonPathsFromSchema } = require('./codegen');
 const HarImporter = require('./HarImporter');
 const { CdpCapture } = require('./CdpCapture');
 const { CaptureProxy } = require('./CaptureProxy');
@@ -173,6 +174,69 @@ class NetworkCapture {
     const entry = this._resolve(target);
     if (!entry) throw new Error(`No capture entry for ${target}`);
     return toCurl(entry, options);
+  }
+
+  _resolveEndpoint(target) {
+    if (target && typeof target === 'object' && typeof target.template === 'string') return target;
+
+    const endpoints = this.endpoints({ all: true });
+    const wanted = typeof target === 'string' ? target : target?.id ?? null;
+    if (!wanted) return null;
+
+    const direct = endpoints.find((endpoint) => endpoint.template === wanted);
+    if (direct) return direct;
+
+    const space = wanted.indexOf(' ');
+    if (space > 0) {
+      const method = wanted.slice(0, space).toUpperCase();
+      const template = wanted.slice(space + 1);
+      const byMethod = endpoints.find((endpoint) => endpoint.method === method && endpoint.template === template);
+      if (byMethod) return byMethod;
+    }
+
+    const entry = this.find(wanted);
+    if (!entry) return null;
+    const template = urlTemplate(entry.url);
+    return endpoints.find((endpoint) => endpoint.template === template && endpoint.method === entry.method) ?? null;
+  }
+
+  toSchema(target, options = {}) {
+    const endpoint = this._resolveEndpoint(target);
+    if (!endpoint) throw new Error(`No capture endpoint for ${target}`);
+    if (!endpoint.schema) {
+      throw new Error(`Endpoint ${endpoint.method} ${endpoint.template} has no JSON body to derive a schema from`);
+    }
+
+    return jsonPathsFromSchema(endpoint.schema, options);
+  }
+
+  toScript(target, options = {}) {
+    const endpoint = this._resolveEndpoint(target);
+    if (!endpoint) throw new Error(`No capture endpoint for ${target}`);
+
+    const schema = options.schemaObject ?? this.toSchema(endpoint, options);
+    if (Object.keys(schema).length === 0) {
+      throw new Error(`Endpoint ${endpoint.method} ${endpoint.template} produced an empty schema; pass schemaObject to override`);
+    }
+
+    const sample = endpoint.sampleIds?.length ? this.find(endpoint.sampleIds[0]) : null;
+    return buildScript({
+      endpoint,
+      schema,
+      entry: sample,
+      url: options.url,
+      params: options.params,
+      headers: options.headers,
+      body: options.body,
+      redact: options.redact,
+      require: options.require,
+    });
+  }
+
+  frames(target) {
+    const entry = this._resolve(target);
+    if (!entry) throw new Error(`No capture entry for ${target}`);
+    return entry.frames ?? [];
   }
 
   json(options = {}) {

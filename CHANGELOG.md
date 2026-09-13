@@ -2,6 +2,29 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 5.3.0
+
+### Added
+
+- `CdpRenderer` and `sengkrep.renderers.cdp()`. `render: true` now works through the DevTools Protocol without installing Playwright or Puppeteer. Options cover `waitForSelector`, `idleMs`, a custom `expression` and `includeMeta`.
+- `capture.toSchema(endpoint)` turns the captured JSON schema into path expressions for `extract()`. Nested objects become dotted paths, arrays become `[]` wildcards, and colliding keys get a longer name.
+- `capture.toScript(endpoint)` returns a runnable `.js` file that uses `extract()`, `Retry` and `RateLimiter`. Credentials are redacted by default.
+- `scraper.close()` releases keep-alive sockets and the metrics server. Generated scripts call it, so they exit on their own.
+- WebSocket frames are recorded through `Network.webSocketFrameSent` and `Network.webSocketFrameReceived`, with `maxFramesPerSocket` and `framesTruncated`, and read back with `capture.frames(id)`.
+- `sengkrep.importCookies(jar, options)` fills a `CookieJar` from a `cookies.txt` file, a string, cookie JSON, or a running browser via `Network.getAllCookies`. `CdpCapture.exportCookies()` returns the browser list.
+- CLI: `sengkrep capture cookies <file>`, plus `--schema`, `--script` and `--script-out` on `sengkrep capture`.
+- `test/10-renderer-and-codegen.js`, 17 tests.
+
+### Changed
+
+- `CdpCapture` now stores WebSocket entries in the request index, so later frames attach to the socket they belong to.
+- `Fetcher.close()` and `Transport.close()` also destroy the HTTP agents and remove temp stream files.
+
+### Migration
+
+- Nothing breaks. The renderer is opt-in: `render: true` without a renderer behaves as before.
+- `capture.frames()` returns an empty array for a request that has no frames, and throws for an unknown id.
+
 ## 5.2.0
 
 ### Security

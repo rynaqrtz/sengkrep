@@ -180,6 +180,9 @@ console.log(capture.endpoints({ bodies: true }));
 | `capture.summary()` | Counts by resource type, status and source |
 | `capture.toFetchCode(entry)` | A `fetch()` snippet for one request |
 | `capture.toCurl(entry)` | The same request as a curl command |
+| `capture.toSchema(endpoint)` | An extraction schema derived from the captured JSON body |
+| `capture.toScript(endpoint)` | A runnable scraper script for that endpoint |
+| `capture.frames(id)` | WebSocket frames recorded for one socket |
 | `capture.saveHar('out.har')` | HAR 1.2 export |
 | `capture.json()` | The whole analysis as a JSON-serializable object |
 
@@ -208,10 +211,94 @@ sengkrep capture playwright https://app.example.com --out session.har
 | `--json` | Print the full analysis as JSON |
 | `--all` | Include static assets as well as API calls |
 | `--code` | Print a `fetch()` snippet for the first endpoint |
+| `--schema` | Print an extraction schema for the first JSON endpoint |
+| `--script` | Print a runnable scraper script for the first JSON endpoint |
+| `--script-out <path>` | Write that script to a file |
 | `--cdp <host>` | DevTools endpoint, default `http://127.0.0.1:9222` |
 | `--port <n>` | Local capture proxy port, default `8899` |
 | `--seconds <n>` | How long to keep the proxy open, default `30` |
 | `--headless=false` | Show the browser when using Playwright |
+
+### From capture to a scraper
+
+Open the page once, then let the capture write the code you would otherwise type by hand. The schema step needs a JSON response, because JSON is what the library can turn into paths.
+
+```js
+const capture = await sengkrep.captureUrl('https://app.example.com/dashboard');
+const [endpoint] = capture.endpoints();
+
+const schema = capture.toSchema(endpoint);
+// { title: 'items[].title', total: 'total' }
+
+const script = capture.toScript(endpoint);
+// a complete .js file using extract(), Retry and RateLimiter
+```
+
+Nested objects become dotted paths, arrays become wildcards and collisions take a longer key:
+
+| Captured JSON | Schema |
+|---|---|
+| `{ items: [{ id }] }` | `{ id: 'items[].id' }` |
+| `{ data: { user: { name } } }` | `{ name: 'data.user.name' }` |
+| `{ id, data: { id } }` | `{ id: 'id', data_id: 'data.id' }` |
+| `{ tags: ['a'] }` | `{ tags: 'tags[]' }` |
+
+`toScript()` writes a file that ends with `scraper.close()`, so it exits on its own. Options: `{ require, logLevel, schemaObject, params, headers, body, redact, maxDepth }`. Headers and bodies are redacted by default, the same way `toFetchCode()` does it.
+
+```bash
+sengkrep capture har session.har --schema
+sengkrep capture har session.har --script-out scraper.js
+```
+
+### Rendering without a browser package
+
+`sengkrep.renderers.cdp()` returns a renderer backed by the DevTools Protocol, so `render: true` works against a Chrome you already run, with no Playwright or Puppeteer install.
+
+```js
+const scraper = sengkrep.create({
+  renderer: sengkrep.renderers.cdp({
+    host: 'http://127.0.0.1:9222',
+    waitForSelector: '#app',
+  }),
+  render: true,
+});
+
+const data = await scraper.extract('https://app.example.com/dashboard', { title: 'h1' });
+```
+
+| Option | Default | Notes |
+|---|---|---|
+| `host` | `http://127.0.0.1:9222` | DevTools endpoint |
+| `idleMs` | `400` | Quiet time after load before reading the DOM |
+| `waitForSelector` | `null` | Poll until the selector exists, then continue |
+| `waitForSelectorTimeout` | `10000` | How long to keep polling before failing |
+| `expression` | `document.documentElement.outerHTML` | What to evaluate, returned as a string |
+| `includeMeta` | `false` | Return `{ html, url, title, readyState, consoleMsgs }` instead of a string |
+| `bodies`, `timeout`, `debuggerUrl`, `connect` | same as `CdpCapture` | Browsers that need custom connection handling can pass `connect` and `debuggerUrl` |
+
+### Cookies
+
+The same DevTools connection can hand its cookies to a `CookieJar`, and a `cookies.txt` file works too. This saves a login round trip when the session already exists in the browser.
+
+```js
+const scraper = sengkrep.create({ cookies: true });
+
+await sengkrep.importCookies(scraper.cookieJar, { from: 'cdp' });
+await sengkrep.importCookies(scraper.cookieJar, { from: 'file', path: 'cookies.txt', domains: ['app.example.com'] });
+```
+
+| `from` | Reads |
+|---|---|
+| `file` | Netscape `cookies.txt`, including `#HttpOnly_` lines. Needs `path` |
+| `text` | The same format from a string. Needs `text` |
+| `json` | Cookie JSON, either a bare array or `{ cookies: [...] }` |
+| `cdp` | `Network.getAllCookies` from the browser |
+| `cookies` | An array of cookie objects you already have |
+
+```bash
+sengkrep capture cookies cookies.txt --domain app.example.com
+sengkrep capture cookies cookies.txt --out jar.json
+```
 
 ## Core API
 
@@ -444,6 +531,7 @@ Capture:
 |---|---|
 | `NetworkCapture` | Merges capture sources and produces endpoints, schemas and code snippets |
 | `CdpCapture` | DevTools Protocol capture with no extra dependencies |
+| `CdpRenderer` | Renders a page through the DevTools Protocol and returns its HTML |
 | `CaptureProxy` | Local HTTP proxy that records what passes through it |
 | `PlaywrightCapture` | Attaches to Playwright pages when Playwright is installed |
 | `HarImporter` | Parses and writes HAR 1.2 |
@@ -507,7 +595,7 @@ Options and defaults:
 | `adaptive` | `false` | `true` or `{ minConcurrency, maxConcurrency, backoffFactor, baseDelay }` |
 | `dedupContent` | `false` | `true` or `{ threshold, shingleSize, maxEntries }` |
 | `backend` | `'file'` | Storage backend for `cache`, `diff` and `incremental`: `file`, `memory` or `sqlite`. Each of those modules also takes `storageDir`, `file` and `table` |
-| `renderer`, `render` | none | `renderer(url, options)` returns HTML; `render: true` applies it to every `extract()` |
+| `renderer`, `render` | none | `renderer(url, options)` returns HTML, or `sengkrep.renderers.cdp()` for the built-in one; `render: true` applies it to every `extract()` |
 | `compliance` | `false` | `{ userAgent, respectXRobotsTag, maskFields, auditLog, purpose }` |
 | `validate` | `{}` | Per-field validation rules |
 
@@ -606,7 +694,7 @@ try {
 
 ## Testing
 
-166 tests run against local fixture servers. No external network access is needed, so the suite works in CI, offline and on devices where outbound traffic is restricted.
+183 tests run against local fixture servers. No external network access is needed, so the suite works in CI, offline and on devices where outbound traffic is restricted.
 
 ```bash
 npm test            # every test file
@@ -626,11 +714,13 @@ npm run bench       # local micro-benchmarks
 | `07-transport-fingerprint-storage.js` | Transport parity, fingerprint coherence, storage backends, SimHash, adaptive throttling, webhooks, compliance |
 | `08-network-capture.js` | HAR round trip, capture proxy, CDP session handling, WebSocket framing, endpoint analysis |
 | `09-security-redirect.js` | Redirect guard per hop, credential stripping, private IPv6 classification, cross-host budget, proxy header stripping |
+| `10-renderer-and-codegen.js` | CDP renderer, capture to schema and script, WebSocket frames, cookie import |
 
 ## Version history
 
 | Version | Changes |
 |---|---|
+| 5.3.0 | `CdpRenderer` and `sengkrep.renderers.cdp()` for `render: true` without Playwright, `capture.toSchema()` and `capture.toScript()` to turn a capture into working code, WebSocket frames recorded and read with `capture.frames()`, cookie import from CDP or a `cookies.txt` file, and `scraper.close()` so a script can exit on its own |
 | 5.2.0 | Redirect hops go through the security guard, cross-origin redirects drop `Authorization` and `Cookie`, the pinned lookup is dropped when the host changes, every `::ffff:` IPv6 form is classified, `CaptureProxy` strips `Proxy-Authorization`, `PaginationDetector` and the `capture` namespace are typed, and `test/types/usage.ts` is part of `npm run typecheck` |
 | 5.1.0 | Network capture: `NetworkCapture`, `CdpCapture`, `CaptureProxy`, `PlaywrightCapture`, `HarImporter`, and the `sengkrep capture` command |
 | 5.0.0 | Package renamed to `sengkrep`. Main class renamed to `Sengkrep`, result metadata moved to `data._sengkrep`, state files named `.sengkrep*` |
@@ -682,6 +772,8 @@ plugins.beforeRequest
 **Fingerprints.** A single browser profile drives the User-Agent and client hints together, so `Sec-CH-UA` never contradicts the UA. `Accept-Encoding` only advertises `zstd` when the running Node build can decompress it. `rotateUAOnEachRequest` defaults to `false`, because real browsers keep one identity for a session.
 
 **Compliance.** `robots.txt`, `Retry-After`, `X-Robots-Tag`, audit logs and field masking are off by default and only run when configured. What the library does with them is up to you.
+
+**Lifecycle.** A scraper holds keep-alive sockets and, when `observability.enabled` is set, a metrics server. Call `scraper.close()` when a script is done, otherwise Node keeps the process alive. Generated scripts from `capture.toScript()` already do this.
 
 **Redirects.** Every hop is checked, not just the first URL. When a hop changes origin, `Authorization`, `Cookie`, `Proxy-Authorization`, `X-Api-Key` and `X-Auth-Token` are dropped and any pinned IP is released, so the new host resolves on its own. A 302 or 303 turns a POST into a bodyless GET, while 307 and 308 keep the method and body. Chains that cross more than `maxCrossHostHops` hosts stop with `TOO_MANY_REDIRECTS`.
 

@@ -11,6 +11,7 @@ const FILES = [
   '07-transport-fingerprint-storage.js',
   '08-network-capture.js',
   '09-security-redirect.js',
+  '10-renderer-and-codegen.js',
 ];
 
 let failed = 0;

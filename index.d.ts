@@ -446,6 +446,7 @@ export class Fetcher {
   constructor(options?: Record<string, unknown>);
   fetch<T = RawResponse>(url: string, options?: RequestConfig & Record<string, unknown>): Promise<T>;
   sweepStreamFiles(ttlMs?: number): number;
+  close(): void;
 }
 
 export class Http2Fetcher {
@@ -884,6 +885,16 @@ export interface CaptureEntry {
   bodyBase64: boolean;
   done?: boolean;
   truncated?: boolean;
+  frames?: CaptureWebSocketFrameRecord[];
+  framesTruncated?: boolean;
+}
+
+export interface CaptureWebSocketFrameRecord {
+  direction: 'sent' | 'received';
+  opcode: number;
+  payloadData: string;
+  size: number;
+  timestamp: number;
 }
 
 export interface CaptureJsonSchema {
@@ -971,9 +982,27 @@ export class NetworkCapture {
   saveHar(filePath: string, options?: { redact?: boolean }): string;
   toFetchCode(target: string | CaptureEntry, options?: { redact?: boolean }): string;
   toCurl(target: string | CaptureEntry, options?: { redact?: boolean }): string;
+  toSchema(target: string | CaptureEntry | CaptureEndpoint, options?: CaptureSchemaOptions): Record<string, string>;
+  toScript(target: string | CaptureEntry | CaptureEndpoint, options?: CaptureScriptOptions): string;
+  frames(target: string | CaptureEntry): CaptureWebSocketFrameRecord[];
   json(options?: CaptureEndpointOptions): { source: string; meta: Record<string, unknown>; summary: CaptureSummary; endpoints: CaptureEndpoint[] };
   toJSON(options?: CaptureEndpointOptions): { source: string; meta: Record<string, unknown>; summary: CaptureSummary; endpoints: CaptureEndpoint[] };
   clear(): this;
+}
+
+export interface CaptureSchemaOptions {
+  maxDepth?: number;
+}
+
+export interface CaptureScriptOptions extends CaptureSchemaOptions {
+  schemaObject?: Record<string, string>;
+  require?: string;
+  logLevel?: 'error' | 'warn' | 'info' | 'debug';
+  url?: string;
+  params?: Record<string, string>;
+  headers?: Record<string, string>;
+  body?: string | null;
+  redact?: boolean;
 }
 
 export interface CdpClient {
@@ -992,6 +1021,8 @@ export interface CdpCaptureOptions {
   maxBodyBytes?: number;
   bodies?: boolean;
   readAllBodies?: boolean;
+  frames?: boolean;
+  maxFramesPerSocket?: number;
   connect?: (url: string, options?: { timeout?: number }) => Promise<CdpClient>;
   discover?: (options?: CdpCaptureOptions) => Promise<{ webSocketDebuggerUrl: string }>;
 }
@@ -1028,9 +1059,80 @@ export class CdpCapture {
   static targets(host?: string, options?: { timeout?: number }): Promise<CdpTargetDescription[]>;
   static discover(host?: string, options?: { timeout?: number }): Promise<{ webSocketDebuggerUrl: string; Browser?: string; [key: string]: unknown }>;
   static captureUrl(url: string, options?: CdpCaptureOptions): Promise<CdpCaptureResult>;
-  open(options?: CdpCaptureOptions): Promise<{ targetId: string; sessionId: string; browser: Record<string, unknown> }>;
+  static exportCookies(options?: CdpCaptureOptions): Promise<CaptureCookie[]>;
+  open(options?: CdpCaptureOptions): Promise<{ session: CdpSession; client: CdpClient; targetId: string; sessionId: string; browser: Record<string, unknown> }>;
+  exportCookies(options?: CdpCaptureOptions): Promise<CaptureCookie[]>;
   capture(options: CdpCaptureOptions & { url: string }): Promise<CdpCaptureResult>;
   fetchBodies(session: CdpSession, sessionId: string, records: unknown[], options?: CdpCaptureOptions): Promise<unknown[]>;
+}
+
+export interface CdpRendererOptions extends CdpCaptureOptions {
+  capture?: CdpCapture;
+  idleMs?: number;
+  waitForSelector?: string | null;
+  waitForSelectorTimeout?: number;
+  waitForSelectorInterval?: number;
+  expression?: string;
+  includeMeta?: boolean;
+  consoleMsgs?: boolean;
+}
+
+export interface CdpRenderResult {
+  html: string;
+  url: string;
+  title: string | null;
+  readyState: string | null;
+  consoleMsgs: Array<{ type: string; text: string }>;
+}
+
+export class CdpRenderer {
+  constructor(options?: CdpRendererOptions);
+  capture: CdpCapture;
+  render(url: string, options?: CdpRendererOptions): Promise<string | CdpRenderResult>;
+}
+
+export function createCdpRenderer(options?: CdpRendererOptions): CdpRenderer;
+
+export interface CaptureCookie {
+  name: string;
+  value: string;
+  domain: string | null;
+  path: string;
+  secure: boolean;
+  httpOnly: boolean;
+  expires: number | null;
+}
+
+export interface CookieImportOptions extends CdpCaptureOptions {
+  from?: 'file' | 'text' | 'json' | 'cdp' | 'browser' | 'cookies';
+  path?: string;
+  text?: string;
+  value?: unknown;
+  cookies?: CaptureCookie[];
+  url?: string;
+  domain?: string;
+  domains?: string[];
+}
+
+export interface CaptureCookies {
+  HTTP_ONLY_PREFIX: string;
+  parseCookieFile(text: string): CaptureCookie[];
+  parseCookieJson(value: unknown): CaptureCookie[];
+  parseSetCookieLine(line: string): CaptureCookie | null;
+  toExpiry(value: unknown): number | null;
+  domainOf(value: string | null | undefined): string | null;
+  readCookies(options?: CookieImportOptions): Promise<CaptureCookie[]>;
+  importCookies(jar: CookieJar, options?: CookieImportOptions): Promise<number>;
+}
+
+export interface CaptureCodegen {
+  jsonPathsFromSchema(schema: CaptureJsonSchema, options?: CaptureSchemaOptions): Record<string, string>;
+  buildScript(options: CaptureScriptOptions & { endpoint: CaptureEndpoint; schema: Record<string, string>; entry?: CaptureEntry | null }): string;
+  collectPaths(schema: CaptureJsonSchema, prefix: string, depth: number, maxDepth: number, out: Array<{ path: string; schema: CaptureJsonSchema }>): void;
+  keyForPath(path: string): string;
+  uniqueKey(base: string, path: string, used: Set<string>): string;
+  queryParamsOf(rawUrl: string): Record<string, string>;
+  stripQuery(rawUrl: string): string;
 }
 
 export interface CaptureProxyOptions {
@@ -1249,6 +1351,7 @@ export class Sengkrep {
 
   getObservabilityReport(): ObservabilityReport;
   saveHar(filePath: string): void;
+  close(): void;
 }
 
 export interface SengkrepStatic {
@@ -1299,16 +1402,31 @@ export interface SengkrepStatic {
   HarImporter: typeof HarImporter;
   captureHar(input: string | HarLog, options?: Record<string, unknown>): NetworkCapture;
   captureUrl(url: string, options?: CdpCaptureOptions): Promise<NetworkCapture>;
+  CdpRenderer: typeof CdpRenderer;
+  renderers: {
+    cdp: typeof createCdpRenderer;
+  };
+  importCookies(jar: CookieJar, options?: CookieImportOptions): Promise<number>;
+  parseCookieFile(text: string): CaptureCookie[];
   capture: {
     NetworkCapture: typeof NetworkCapture;
     CdpCapture: typeof CdpCapture;
     CdpSession: typeof CdpSession;
+    CdpRenderer: typeof CdpRenderer;
     CaptureProxy: typeof CaptureProxy;
     PlaywrightCapture: typeof PlaywrightCapture;
     HarImporter: typeof HarImporter;
+    createCdpRenderer: typeof createCdpRenderer;
+    renderers: {
+      cdp: typeof createCdpRenderer;
+    };
+    importCookies(jar: CookieJar, options?: CookieImportOptions): Promise<number>;
+    parseCookieFile(text: string): CaptureCookie[];
     DEFAULT_CDP_HOST: string;
     httpGetJson(url: string, options?: { timeout?: number }): Promise<unknown>;
     analyze: CaptureAnalyze;
+    codegen: CaptureCodegen;
+    cookies: CaptureCookies;
     entry: CaptureEntryModule;
     ws: CaptureWs;
   };

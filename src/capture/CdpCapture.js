@@ -156,6 +156,8 @@ class CdpCapture {
     this.maxEntries = options.maxEntries ?? 1000;
     this.maxBodyBytes = options.maxBodyBytes ?? 2000000;
     this.captureBodies = options.bodies ?? true;
+    this.maxFramesPerSocket = options.maxFramesPerSocket ?? 500;
+    this.captureFrames = options.frames ?? true;
     this.debuggerUrl = options.debuggerUrl ?? null;
     this.connect = options.connect ?? ws.connect;
     this.discover = options.discover ?? ((discoverOptions) => CdpCapture.discover(this.host, discoverOptions));
@@ -181,7 +183,7 @@ class CdpCapture {
     return new CdpCapture(options).capture({ ...options, url });
   }
 
-  async open(options = {}) {
+  async _connect(options = {}) {
     const debuggerUrl = options.debuggerUrl ?? this.debuggerUrl;
     const info = debuggerUrl
       ? { webSocketDebuggerUrl: debuggerUrl }
@@ -190,16 +192,69 @@ class CdpCapture {
     const client = await this.connect(info.webSocketDebuggerUrl, { timeout: options.timeout ?? this.timeout });
     const session = new CdpSession(client, { timeout: options.timeout ?? this.timeout });
 
-    const created = await session.send('Target.createTarget', { url: 'about:blank' });
-    const attached = await session.send('Target.attachToTarget', { targetId: created.targetId, flatten: true });
+    return { session, client, browser: info };
+  }
+
+  async open(options = {}) {
+    const opened = await this._connect(options);
+
+    const created = await opened.session.send('Target.createTarget', { url: 'about:blank' });
+    const attached = await opened.session.send('Target.attachToTarget', { targetId: created.targetId, flatten: true });
 
     return {
-      session,
-      client,
+      ...opened,
       targetId: created.targetId,
       sessionId: attached.sessionId,
-      browser: info,
     };
+  }
+
+  async exportCookies(options = {}) {
+    const opened = await this._connect(options);
+    const { session } = opened;
+
+    try {
+      const result = await session.send('Network.getAllCookies', {});
+      return (result?.cookies ?? []).map((cookie) => ({
+        name: cookie.name,
+        value: cookie.value,
+        domain: String(cookie.domain ?? '').replace(/^\./, ''),
+        path: cookie.path ?? '/',
+        secure: Boolean(cookie.secure),
+        httpOnly: Boolean(cookie.httpOnly),
+        expires: cookie.session || !cookie.expires ? null : cookie.expires * 1000,
+      }));
+    } catch (err) {
+      if (err.code === 'CDP_ERROR') {
+        throw new Error(`Could not read cookies from the browser: ${err.message}`);
+      }
+      throw err;
+    } finally {
+      session.close();
+    }
+  }
+
+  static exportCookies(options = {}) {
+    return new CdpCapture(options).exportCookies(options);
+  }
+
+  _recordFrame(byRequestId, params, direction) {
+    const record = byRequestId.get(params.requestId);
+    if (!record) return;
+    if (!Array.isArray(record.entry.frames)) record.entry.frames = [];
+    if (record.entry.frames.length >= this.maxFramesPerSocket) {
+      record.entry.framesTruncated = true;
+      return;
+    }
+
+    const frame = params.response ?? params;
+    const payload = frame.payloadData ?? '';
+    record.entry.frames.push({
+      direction,
+      opcode: Number.isFinite(frame.opcode) ? frame.opcode : 0,
+      payloadData: String(payload),
+      size: Buffer.byteLength(String(payload)),
+      timestamp: Number.isFinite(params.timestamp) ? params.timestamp : Date.now() / 1000,
+    });
   }
 
   _shouldReadBody(entry, options) {
@@ -296,7 +351,7 @@ class CdpCapture {
 
     session.on('Network.webSocketCreated', (params) => {
       if (records.length >= maxEntries) return;
-      records.push({
+      const record = {
         requestId: params.requestId,
         entry: createEntry({
           source: 'cdp',
@@ -305,8 +360,16 @@ class CdpCapture {
           resourceType: 'websocket',
           startedDateTime: new Date().toISOString(),
         }),
-      });
+      };
+      record.entry.frames = [];
+      records.push(record);
+      byRequestId.set(params.requestId, record);
     }, sessionId);
+
+    if (this.captureFrames && options.frames !== false) {
+      session.on('Network.webSocketFrameSent', (params) => this._recordFrame(byRequestId, params, 'sent'), sessionId);
+      session.on('Network.webSocketFrameReceived', (params) => this._recordFrame(byRequestId, params, 'received'), sessionId);
+    }
 
     session.on('Page.loadEventFired', () => markLoaded(), sessionId);
 

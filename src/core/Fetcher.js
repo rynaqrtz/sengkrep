@@ -80,6 +80,17 @@ class Fetcher {
     this.redirectPolicy = buildRedirectPolicy(options.redirectPolicy);
   }
 
+  close() {
+    for (const file of this._tempFiles) {
+      try {
+        fs.unlinkSync(file);
+      } catch {}
+    }
+    this._tempFiles.clear();
+    this.httpAgent.destroy();
+    this.httpsAgent.destroy();
+  }
+
   sweepStreamFiles(ttlMs = 3600000) {
     let removed = 0;
     try {

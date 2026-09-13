@@ -141,7 +141,10 @@ class Observability {
   }
 
   close() {
-    if (this._server) this._server.close();
+    if (this._server) {
+      this._server.closeAllConnections?.();
+      this._server.close();
+    }
   }
 }
 

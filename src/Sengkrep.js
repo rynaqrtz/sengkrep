@@ -854,6 +854,11 @@ class Sengkrep {
     if (!this.har) throw new Error('HAR recording not enabled. Pass { har: true } to sengkrep.create()');
     this.har.save(filePath);
   }
+
+  close() {
+    this.transport.close();
+    this.observability.close();
+  }
 }
 
 module.exports = Sengkrep;

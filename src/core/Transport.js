@@ -43,6 +43,7 @@ class Transport {
 
   close() {
     if (this.http2 && typeof this.http2.closeAll === 'function') this.http2.closeAll();
+    if (this.fetcher && typeof this.fetcher.close === 'function') this.fetcher.close();
   }
 }
 
