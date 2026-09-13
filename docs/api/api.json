@@ -1,14 +1,15 @@
 {
   "generatedFrom": "index.d.ts",
-  "hash": "3884afd34b684b5937a9db352c988592580b26ed",
+  "hash": "48c357f1cddb47fb016e858346ee3c7a49c46579",
   "counts": {
-    "type": 16,
-    "interface": 111,
-    "class": 67,
-    "function": 3
+    "type": 17,
+    "interface": 115,
+    "function": 4,
+    "class": 67
   },
   "categories": {
     "Types": [
+      "DoctorStatus",
       "FieldSelector",
       "JsonSchema",
       "JsonSchemaField",
@@ -23,6 +24,8 @@
       "CrawlJob",
       "DiffChange",
       "DistributedAdapter",
+      "DoctorCheck",
+      "DoctorDriver",
       "FieldDefinition",
       "FingerprintContext",
       "HealthAlert",
@@ -45,6 +48,7 @@
       "CacheStats",
       "DiffReport",
       "DistributedQueueResult",
+      "DoctorReport",
       "ExtractResult",
       "HealthReport",
       "ObservabilityReport",
@@ -65,6 +69,7 @@
       "CrawlOptions",
       "CsrfOptions",
       "DiffOptions",
+      "DoctorOptions",
       "ExtractOptions",
       "FingerprintOptions",
       "HealthOptions",
@@ -95,6 +100,10 @@
       "SchedulerRunEvent",
       "SchedulerStats",
       "SchedulerTickEvent"
+    ],
+    "Functions": [
+      "createStorage",
+      "doctor"
     ],
     "Classes": [
       "AdaptiveThrottle",
@@ -135,9 +144,6 @@
       "UrlDeduplicator",
       "Webhook",
       "WordPress"
-    ],
-    "Functions": [
-      "createStorage"
     ],
     "Network capture": [
       "CaptureAnalyze",
@@ -852,6 +858,74 @@
         "table",
         "storage"
       ],
+      "methods": []
+    },
+    {
+      "name": "DoctorStatus",
+      "kind": "type",
+      "slug": "doctor-status",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "DoctorOptions",
+      "kind": "interface",
+      "slug": "doctor-options",
+      "category": "Options",
+      "properties": [
+        "host",
+        "cdp",
+        "skipNetwork",
+        "timeout"
+      ],
+      "methods": []
+    },
+    {
+      "name": "DoctorCheck",
+      "kind": "interface",
+      "slug": "doctor-check",
+      "category": "Interfaces",
+      "properties": [
+        "name",
+        "status",
+        "detail"
+      ],
+      "methods": []
+    },
+    {
+      "name": "DoctorReport",
+      "kind": "interface",
+      "slug": "doctor-report",
+      "category": "Results",
+      "properties": [
+        "ok",
+        "node",
+        "platform",
+        "checks",
+        "failures",
+        "warnings"
+      ],
+      "methods": []
+    },
+    {
+      "name": "DoctorDriver",
+      "kind": "interface",
+      "slug": "doctor-driver",
+      "category": "Interfaces",
+      "properties": [
+        "name",
+        "install",
+        "purpose"
+      ],
+      "methods": []
+    },
+    {
+      "name": "doctor",
+      "kind": "function",
+      "slug": "doctor",
+      "category": "Functions",
+      "properties": [],
       "methods": []
     },
     {
@@ -3155,6 +3229,7 @@
         "Transport",
         "AdaptiveThrottle",
         "SingleFlight",
+        "Doctor",
         "Scheduler",
         "JobStore",
         "cron",
@@ -3188,6 +3263,7 @@
         "captureUrl",
         "importCookies",
         "parseCookieFile",
+        "doctor",
         "exportData",
         "toCSV",
         "toJSON",

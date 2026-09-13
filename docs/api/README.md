@@ -1,6 +1,6 @@
 # API reference
 
-197 exports: 67 classes, 3 functions, 111 interfaces, 16 types.
+203 exports: 67 classes, 4 functions, 115 interfaces, 17 types.
 
 Generated from `index.d.ts` by `npm run docs`. Do not edit this directory by hand; `npm run docs:check` fails when it drifts.
 
@@ -120,7 +120,7 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [SessionPoolOptions](./session-pool-options.md) | `interface` |
 | [SessionPoolSession](./session-pool-session.md) | `interface` |
 
-## Options (24)
+## Options (25)
 
 | Name | Kind |
 | --- | --- |
@@ -134,6 +134,7 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [CrawlOptions](./crawl-options.md) | `interface` |
 | [CsrfOptions](./csrf-options.md) | `interface` |
 | [DiffOptions](./diff-options.md) | `interface` |
+| [DoctorOptions](./doctor-options.md) | `interface` |
 | [ExtractOptions](./extract-options.md) | `interface` |
 | [FingerprintOptions](./fingerprint-options.md) | `interface` |
 | [HealthOptions](./health-options.md) | `interface` |
@@ -149,7 +150,7 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [StorageOptions](./storage-options.md) | `interface` |
 | [WebhookOptions](./webhook-options.md) | `interface` |
 
-## Results (12)
+## Results (13)
 
 | Name | Kind |
 | --- | --- |
@@ -157,6 +158,7 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [CacheStats](./cache-stats.md) | `interface` |
 | [DiffReport](./diff-report.md) | `interface` |
 | [DistributedQueueResult](./distributed-queue-result.md) | `interface` |
+| [DoctorReport](./doctor-report.md) | `interface` |
 | [ExtractResult](./extract-result.md) | `type` |
 | [HealthReport](./health-report.md) | `interface` |
 | [ObservabilityReport](./observability-report.md) | `interface` |
@@ -209,7 +211,7 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [Webhook](./webhook.md) | `class` |
 | [WordPress](./word-press.md) | `class` |
 
-## Interfaces (21)
+## Interfaces (23)
 
 | Name | Kind |
 | --- | --- |
@@ -218,6 +220,8 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [CrawlJob](./crawl-job.md) | `interface` |
 | [DiffChange](./diff-change.md) | `interface` |
 | [DistributedAdapter](./distributed-adapter.md) | `interface` |
+| [DoctorCheck](./doctor-check.md) | `interface` |
+| [DoctorDriver](./doctor-driver.md) | `interface` |
 | [FieldDefinition](./field-definition.md) | `interface` |
 | [FingerprintContext](./fingerprint-context.md) | `interface` |
 | [HealthAlert](./health-alert.md) | `interface` |
@@ -235,10 +239,11 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [ValidationErrorDetail](./validation-error-detail.md) | `interface` |
 | [ValidationRule](./validation-rule.md) | `interface` |
 
-## Types (7)
+## Types (8)
 
 | Name | Kind |
 | --- | --- |
+| [DoctorStatus](./doctor-status.md) | `type` |
 | [FieldSelector](./field-selector.md) | `type` |
 | [JsonSchema](./json-schema.md) | `type` |
 | [JsonSchemaField](./json-schema-field.md) | `type` |
@@ -247,8 +252,9 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [SchemaField](./schema-field.md) | `type` |
 | [StorageBackend](./storage-backend.md) | `type` |
 
-## Functions (1)
+## Functions (2)
 
 | Name | Kind |
 | --- | --- |
 | [createStorage](./create-storage.md) | `function` |
+| [doctor](./doctor.md) | `function` |

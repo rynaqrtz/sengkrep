@@ -2,6 +2,20 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 5.8.0
+
+### Added
+
+- `sengkrep doctor`, with `--host`, `--cdp`, `--skip-network` and `--json`. It reports the Node version against the package floor, `node:sqlite` availability, zstd support, whether the temp and working directories are writable, whether each optional driver (`playwright`, `pg`, `mysql2`, `@clickhouse/client`, `@aws-sdk/client-s3`) is installed, DNS resolution, and a DevTools endpoint when one is given. The same report is available as `sengkrep.doctor(options)` and `sengkrep.Doctor`.
+- `sengkrep jobs <jobs.js>` prints every registered job with its schedule, the next run as a relative time and timestamp, the last status, and the run, failure and missed counters. `--json` prints the stored records.
+- `sengkrep run <jobs.js>` with `--job`, `--once`, `--due` and `--watch`, plus `--dir`, `--catch-up` and `--concurrency`. A job file exports an array of jobs or `{ jobs, concurrency, catchUp }`, and the store stays on disk. The command exits non-zero when a handler throws.
+- `sengkrep scrape --sink '<json>'` accepts the same sink descriptor as `createSink()`, so the CLI can write to a file, Postgres, MySQL, ClickHouse or S3 without a script. The sink is created, flushed and closed by the command.
+
+### Fixed
+
+- `sengkrep scrape` printed its result and then hung, because the CLI created a scraper and never closed it. Keep-alive sockets kept the event loop alive until the process was killed. The command now calls `scraper.close()` in a `finally` block.
+- `--flag=value` was parsed as a flag whose name contained the `=`, so the documented `--headless=false` was silently ignored and `--output=<path>` wrote to stdout instead of the file. Both `--flag value` and `--flag=value` are honored now.
+
 ## 5.7.0
 
 ### Added

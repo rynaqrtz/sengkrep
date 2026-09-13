@@ -39,6 +39,7 @@ const { inferSchema, inferFields, detectRepeatingContainers } = require('./src/m
 const { DistributedQueue, MemoryAdapter }  = require('./src/modules/DistributedQueue');
 const AdaptiveThrottle                     = require('./src/modules/AdaptiveThrottle');
 const SingleFlight                         = require('./src/modules/SingleFlight');
+const Doctor                               = require('./src/modules/Doctor');
 const Scheduler                            = require('./src/modules/Scheduler');
 const JobStore                             = require('./src/modules/JobStore');
 const cron                                 = require('./src/modules/cron');
@@ -128,6 +129,8 @@ sengkrep.MemoryAdapter    = MemoryAdapter;
 sengkrep.Transport        = Transport;
 sengkrep.AdaptiveThrottle = AdaptiveThrottle;
 sengkrep.SingleFlight     = SingleFlight;
+sengkrep.Doctor           = Doctor;
+sengkrep.doctor           = (options) => Doctor(options);
 sengkrep.Scheduler        = Scheduler;
 sengkrep.JobStore         = JobStore;
 sengkrep.cron             = cron;

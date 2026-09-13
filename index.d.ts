@@ -357,6 +357,38 @@ export interface JobStoreOptions {
   storage?: { get(key: string): { data: unknown } | null; set(key: string, value: unknown): unknown; delete(key: string): unknown; list(): string[] };
 }
 
+export type DoctorStatus = 'pass' | 'warn' | 'fail';
+
+export interface DoctorOptions {
+  host?: string;
+  cdp?: string;
+  skipNetwork?: boolean;
+  timeout?: number;
+}
+
+export interface DoctorCheck {
+  name: string;
+  status: DoctorStatus;
+  detail: string;
+}
+
+export interface DoctorReport {
+  ok: boolean;
+  node: string;
+  platform: string;
+  checks: DoctorCheck[];
+  failures: number;
+  warnings: number;
+}
+
+export interface DoctorDriver {
+  name: string;
+  install: string;
+  purpose: string;
+}
+
+export function doctor(options?: DoctorOptions): Promise<DoctorReport>;
+
 export interface CronModule {
   parseCron(expression: string): Record<string, unknown>;
   nextCronTime(parsed: Record<string, unknown>, from: number): number | null;
@@ -1846,6 +1878,14 @@ export interface SengkrepStatic {
   Transport: typeof Transport;
   AdaptiveThrottle: typeof AdaptiveThrottle;
   SingleFlight: typeof SingleFlight;
+  Doctor: {
+    (options?: DoctorOptions): Promise<DoctorReport>;
+    MIN_NODE: string;
+    SQLITE_NODE: string;
+    OPTIONAL_DRIVERS: DoctorDriver[];
+    compareVersions(left: string, right: string): number;
+  };
+  doctor(options?: DoctorOptions): Promise<DoctorReport>;
   Scheduler: typeof Scheduler;
   JobStore: typeof JobStore;
   cron: CronModule;

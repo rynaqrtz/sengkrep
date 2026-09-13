@@ -12,6 +12,7 @@ import type {
   CdpRenderer,
   CdpRenderResult,
   CookieJar,
+  DoctorReport,
   JobRecord,
   PaginationNext,
   RawResponse,
@@ -188,3 +189,16 @@ async function scrapeIntoSink(): Promise<number> {
 }
 
 void scrapeIntoSink;
+
+async function healthCheck(): Promise<DoctorReport> {
+  const report = await sengkrep.doctor({ host: 'example.com', skipNetwork: true, timeout: 2000 });
+  const checks = report.checks.map((check) => `${check.status}:${check.name}`);
+  const drivers = sengkrep.Doctor.OPTIONAL_DRIVERS.map((driver) => driver.install);
+  const newer = sengkrep.Doctor.compareVersions(report.node, sengkrep.Doctor.MIN_NODE) >= 0;
+  void checks;
+  void drivers;
+  void newer;
+  return report;
+}
+
+void healthCheck;

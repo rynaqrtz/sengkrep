@@ -1,11 +1,11 @@
 {
   "input": "index.d.ts",
-  "hash": "3884afd34b684b5937a9db352c988592580b26ed",
+  "hash": "48c357f1cddb47fb016e858346ee3c7a49c46579",
   "counts": {
-    "type": 16,
-    "interface": 111,
-    "class": 67,
-    "function": 3
+    "type": 17,
+    "interface": 115,
+    "function": 4,
+    "class": 67
   },
   "files": [
     "README.md",
@@ -84,6 +84,12 @@
     "distributed-queue-result.md",
     "distributed-queue.md",
     "dns-cache.md",
+    "doctor-check.md",
+    "doctor-driver.md",
+    "doctor-options.md",
+    "doctor-report.md",
+    "doctor-status.md",
+    "doctor.md",
     "extract-options.md",
     "extract-result.md",
     "extraction-error.md",

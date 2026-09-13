@@ -70,6 +70,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 | `Transport` | `typeof Transport` | yes |  |
 | `AdaptiveThrottle` | `typeof AdaptiveThrottle` | yes |  |
 | `SingleFlight` | `typeof SingleFlight` | yes |  |
+| `Doctor` | `{ (options?: DoctorOptions): Promise<DoctorReport>; MIN_NODE: string; SQLITE_NODE: string; OPTIONAL_DRIVERS: DoctorDriver[]; compareVersions(left: string, right: string): number; }` | yes |  |
 | `Scheduler` | `typeof Scheduler` | yes |  |
 | `JobStore` | `typeof JobStore` | yes |  |
 | `cron` | `CronModule` | yes |  |
@@ -106,6 +107,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 | `captureUrl` | `url: string, options?: CdpCaptureOptions` | `Promise<NetworkCapture>` |  |
 | `importCookies` | `jar: CookieJar, options?: CookieImportOptions` | `Promise<number>` |  |
 | `parseCookieFile` | `text: string` | `CaptureCookie[]` |  |
+| `doctor` | `options?: DoctorOptions` | `Promise<DoctorReport>` |  |
 | `exportData` | `data: unknown, options?: { format?: string; path?: string }` | `string` |  |
 | `toCSV` | `data: unknown[]` | `string` |  |
 | `toJSON` | `data: unknown` | `string` |  |
@@ -165,6 +167,9 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 - [Discover](./discover.md)
 - [DistributedQueue](./distributed-queue.md)
 - [DnsCache](./dns-cache.md)
+- [DoctorDriver](./doctor-driver.md)
+- [DoctorOptions](./doctor-options.md)
+- [DoctorReport](./doctor-report.md)
 - [ExtractOptions](./extract-options.md)
 - [ExtractResult](./extract-result.md)
 - [ExtractionError](./extraction-error.md)
@@ -228,6 +233,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 - [createCdpRenderer](./create-cdp-renderer.md)
 - [createSink](./create-sink.md)
 - [createStorage](./create-storage.md)
+- [doctor](./doctor.md)
 
 ## Declaration
 
