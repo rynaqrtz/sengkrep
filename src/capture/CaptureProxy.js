@@ -107,6 +107,7 @@ class CaptureProxy {
     const startedDateTime = new Date(startedAt).toISOString();
     const requestHeaders = { ...req.headers };
     delete requestHeaders['proxy-connection'];
+    delete requestHeaders['proxy-authorization'];
     requestHeaders.host = target.host;
 
     const upstreamBody = await this._readBody(req);

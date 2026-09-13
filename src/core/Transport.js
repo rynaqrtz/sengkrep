@@ -21,7 +21,7 @@ class Transport {
         return res;
       } catch (err) {
         const hasStatus = err.status !== undefined && err.status !== null;
-        const terminal = err.code === 'TIMEOUT' || err.code === 'CANCELED' || !this.fallback;
+        const terminal = err.code === 'TIMEOUT' || err.code === 'CANCELED' || err.code === 'SECURITY_BLOCKED' || !this.fallback;
         if (hasStatus || terminal) throw err;
         if (this.logger) {
           this.logger.debug(`HTTP/2 failed for ${url}, falling back to HTTP/1.1 (${err.code ?? err.name})`);

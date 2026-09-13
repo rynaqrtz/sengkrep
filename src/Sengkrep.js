@@ -115,6 +115,7 @@ class Sengkrep {
     this.fetcher = new Fetcher({
       timeout:      options.timeout      ?? 30000,
       maxRedirects: options.maxRedirects ?? 5,
+      redirectPolicy: options.redirectPolicy,
       fingerprint:  this.fingerprint,
       cookieJar:    this.cookieJar,
       interceptors: this.interceptors,
@@ -124,7 +125,12 @@ class Sengkrep {
     });
 
     this.http2Fetcher = options.http2
-      ? new Http2Fetcher({ timeout: options.timeout ?? 30000, fingerprint: this.fingerprint, cookieJar: this.cookieJar })
+      ? new Http2Fetcher({
+          timeout: options.timeout ?? 30000,
+          redirectPolicy: options.redirectPolicy,
+          fingerprint: this.fingerprint,
+          cookieJar: this.cookieJar,
+        })
       : null;
 
     this.transport = new Transport({ fetcher: this.fetcher, http2: this.http2Fetcher, logger: this.logger });
@@ -302,6 +308,11 @@ class Sengkrep {
       ? (host, options, callback) => callback(null, pinned.address, pinned.family)
       : null;
 
+    const redirectGuard = this.security.enabled
+      ? (nextUrl) => this.security.resolveForRequest(nextUrl)
+      : null;
+    const onRedirect = redirectGuard ?? reqOptions.onRedirect ?? null;
+
     if (this.circuitBreaker) this.circuitBreaker.assertCanRequest(hostname);
 
     if (this.cache) {
@@ -335,12 +346,12 @@ class Sengkrep {
 
         let res;
         try {
-          res = await this._doRequest(resolvedUrl, { ...reqOptions, headers: buildHeaders(), lookup: pinnedLookup }, proxy);
+          res = await this._doRequest(resolvedUrl, { ...reqOptions, headers: buildHeaders(), lookup: pinnedLookup, onRedirect }, proxy);
         } catch (err) {
           if (err.status === 401 && this.auth.shouldRefresh(401) && !attemptedRefresh) {
             attemptedRefresh = true;
             await this.auth.refresh();
-            res = await this._doRequest(resolvedUrl, { ...reqOptions, headers: buildHeaders(), lookup: pinnedLookup }, proxy);
+            res = await this._doRequest(resolvedUrl, { ...reqOptions, headers: buildHeaders(), lookup: pinnedLookup, onRedirect }, proxy);
           } else {
             throw err;
           }

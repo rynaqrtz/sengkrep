@@ -1,5 +1,6 @@
 const http2 = require('http2');
 const zlib  = require('zlib');
+const { buildRedirectPolicy, originsDiffer, prepareRedirectHop } = require('./redirect');
 const contentSafety = require('../utils/contentSafety');
 const { version } = require('../../package.json');
 
@@ -51,6 +52,7 @@ class Http2Fetcher {
     this.fingerprint  = options.fingerprint  ?? null;
     this.cookieJar    = options.cookieJar    ?? null;
     this.maxRedirects = options.maxRedirects ?? 5;
+    this.redirectPolicy = buildRedirectPolicy(options.redirectPolicy);
     this._sessions    = new Map();
   }
 
@@ -70,11 +72,13 @@ class Http2Fetcher {
     return session;
   }
 
-  fetch(url, config = {}, hops = 0) {
+  fetch(url, config = {}, hops = 0, redirectState = null) {
     return new Promise((resolve, reject) => {
       if (hops > this.maxRedirects) {
         return reject(new Http2Error('Max redirects exceeded', 'TOO_MANY_REDIRECTS'));
       }
+
+      const state = redirectState ?? { crossHostHops: 0 };
 
       let parsed;
       try {
@@ -177,12 +181,27 @@ class Http2Fetcher {
         }
 
         if ([301, 302, 303, 307, 308].includes(status) && responseHeaders.location) {
+          let next;
           try {
-            const next = new URL(responseHeaders.location, url).href;
-            return finish(resolve, await this.fetch(next, config, hops + 1));
+            next = new URL(responseHeaders.location, url).href;
           } catch {
             return finish(reject, new Http2Error('Bad redirect location', 'BAD_REDIRECT'));
           }
+
+          if (originsDiffer(url, next)) {
+            state.crossHostHops += 1;
+            if (state.crossHostHops > this.redirectPolicy.maxCrossHostHops) {
+              const err = new Http2Error(
+                `Too many cross-host redirects (> ${this.redirectPolicy.maxCrossHostHops}): ${next}`,
+                'TOO_MANY_REDIRECTS',
+              );
+              err.status = status;
+              return finish(reject, err);
+            }
+          }
+
+          const { hopConfig } = await prepareRedirectHop(config, this.redirectPolicy, { url, next, statusCode: status, hops });
+          return finish(resolve, await this.fetch(next, hopConfig, hops + 1, state));
         }
 
         if (status === 304) {

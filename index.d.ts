@@ -283,6 +283,12 @@ export interface SecurityOptions {
   blockedPorts?: number[];
 }
 
+export interface RedirectPolicyOptions {
+  validateEachHop?: boolean;
+  forwardSensitiveHeaders?: boolean;
+  maxCrossHostHops?: number;
+}
+
 export interface ComplianceOptions {
   userAgent?: string;
   respectXRobotsTag?: boolean;
@@ -368,6 +374,7 @@ export interface SengkrepOptions {
   baseURL?: string | null;
   timeout?: number;
   maxRedirects?: number;
+  redirectPolicy?: RedirectPolicyOptions;
   keepAlive?: boolean;
   delay?: number;
   delayMin?: number;
@@ -1077,6 +1084,96 @@ export class PlaywrightCapture {
   capture(url: string, options?: PlaywrightCaptureOptions): Promise<{ entries: CaptureEntry[]; title: string; html: string | null; url: string }>;
 }
 
+export interface PaginationNext {
+  selector: string | null;
+  url: string;
+  method: 'rel' | 'text' | 'class' | 'url-param' | 'url-path';
+  currentPage?: number;
+}
+
+export interface PaginationDetectorModule {
+  detectNextLink($: CheerioAPI, currentUrl: string): PaginationNext | null;
+  detectFromUrlPattern(currentUrl: string): PaginationNext | null;
+  detectTotalPages($: CheerioAPI): number;
+}
+
+export interface CaptureAnalyzeOptions {
+  includeStatic?: boolean;
+  includeBodies?: boolean;
+  maxSample?: number;
+  schema?: boolean;
+}
+
+export interface CaptureAnalyze {
+  groupEndpoints(entries: CaptureEntry[], options?: CaptureAnalyzeOptions): CaptureEndpoint[];
+  inferJsonSchema(value: unknown): CaptureJsonSchema;
+  mergeSchemas(schemas: Array<CaptureJsonSchema | null | undefined>): CaptureJsonSchema;
+  queryParams(rawUrl: string): string[];
+  safeHeaders(headers: CaptureHeaders | unknown, redact?: boolean): CaptureHeaders;
+  schemaFromSamples(samples: unknown[]): CaptureJsonSchema | null;
+  summarize(entries: CaptureEntry[]): CaptureSummary;
+  toCurl(entry: CaptureEntry, options?: { redact?: boolean }): string;
+  toFetchCode(entry: CaptureEntry, options?: { redact?: boolean }): string;
+  truncate(text: unknown, max: number): string;
+  urlTemplate(rawUrl: string, options?: { placeholder?: string }): string;
+}
+
+export interface CaptureEntryClassifyInput {
+  resourceType?: string;
+  mimeType?: string;
+  url?: string;
+}
+
+export interface CaptureEntryModule {
+  API_RESOURCE_TYPES: Set<string>;
+  DEFAULT_REDACT_HEADERS: string[];
+  HOP_BY_HOP: Set<string>;
+  bodyToText(body: unknown): string | null;
+  byteLength(body: unknown): number;
+  classifyResourceType(input: CaptureEntryClassifyInput): string;
+  createEntry(input?: CaptureEntryInit): CaptureEntry;
+  entryKind(entry: { status: number; failed?: boolean }): 'failed' | 'success' | 'redirect' | 'client-error' | 'server-error' | 'unknown';
+  headerMap(headers: unknown): CaptureHeaders;
+  headersToHar(headers: unknown): Array<{ name: string; value: string }>;
+  isApiEntry(entry: CaptureEntry | null | undefined): boolean;
+  isJsonMime(mimeType: string | null | undefined): boolean;
+  isTextMime(mimeType: string | null | undefined): boolean;
+  nextId(prefix?: string): string;
+  parseJsonBody(entry: CaptureEntry): unknown;
+  parseUrl(rawUrl: string): URL | null;
+  redactHeaders(headers: unknown, names?: string[]): CaptureHeaders;
+}
+
+export interface CaptureWebSocketFrame {
+  opcode: number;
+  payload: Buffer;
+  fin: boolean;
+}
+
+export interface CaptureDecodeResult {
+  frames: CaptureWebSocketFrame[];
+  rest: Buffer;
+}
+
+export interface CaptureWebSocketClient {
+  socket: unknown;
+  maxPayload: number;
+  send(data: string | Buffer, options?: { binary?: boolean }): void;
+  close(code?: number, reason?: string): void;
+  on(event: string, handler: (...args: never[]) => void): void;
+  off?(event: string, handler: (...args: never[]) => void): void;
+}
+
+export interface CaptureWs {
+  GUID: string;
+  OPCODES: Record<string, number>;
+  WebSocketClient: new (socket: unknown, options?: { maxPayload?: number }) => CaptureWebSocketClient;
+  acceptKey(key: string): string;
+  connect(url: string, options?: { timeout?: number; maxPayload?: number; headers?: Record<string, string> }): Promise<CaptureWebSocketClient>;
+  decodeFrames(buffer: Buffer, options?: { maxPayload?: number }): CaptureDecodeResult;
+  encodeFrame(opcode: number, data: string | Buffer, options?: { mask?: boolean; key?: Buffer; fin?: boolean }): Buffer;
+}
+
 export const HarImporter: {
   isHar(value: unknown): boolean;
   parseHar(input: string | HarLog, options?: { maxEntries?: number; source?: string }): CaptureEntry[];
@@ -1211,16 +1308,16 @@ export interface SengkrepStatic {
     HarImporter: typeof HarImporter;
     DEFAULT_CDP_HOST: string;
     httpGetJson(url: string, options?: { timeout?: number }): Promise<unknown>;
-    analyze: Record<string, (...args: never[]) => unknown>;
-    entry: Record<string, unknown>;
-    ws: Record<string, unknown>;
+    analyze: CaptureAnalyze;
+    entry: CaptureEntryModule;
+    ws: CaptureWs;
   };
   WordPress: typeof WordPress;
   GraphQLClient: typeof GraphQLClient;
   DnsCache: typeof DnsCache;
   FormHandler: typeof FormHandler;
   ProgressBar: typeof ProgressBar;
-  PaginationDetector: unknown;
+  PaginationDetector: PaginationDetectorModule;
   DistributedQueue: typeof DistributedQueue;
   MemoryAdapter: typeof MemoryAdapter;
   StreamWriter: typeof StreamWriter;

@@ -476,6 +476,7 @@ Options and defaults:
 | `connectTimeout` | `null` | Overrides the connect phase only |
 | `totalTimeout` | `null` | Hard deadline for a whole request |
 | `maxRedirects` | `5` | Manual redirect following |
+| `redirectPolicy` | `{ validateEachHop: true, forwardSensitiveHeaders: false, maxCrossHostHops: 3 }` | Security guard runs on every hop, credentials are dropped when the origin changes, and cross-host hops are capped |
 | `keepAlive` | `true` | Reuse sockets |
 | `delay` | none | Fixed-ish delay in ms. The actual wait is jittered between 0.8x and 1.2x |
 | `delayMin`, `delayMax` | `500`, `2500` | Range for the jittered delay, used when `delay` is not set |
@@ -605,7 +606,7 @@ try {
 
 ## Testing
 
-154 tests run against local fixture servers. No external network access is needed, so the suite works in CI, offline and on devices where outbound traffic is restricted.
+166 tests run against local fixture servers. No external network access is needed, so the suite works in CI, offline and on devices where outbound traffic is restricted.
 
 ```bash
 npm test            # every test file
@@ -624,11 +625,13 @@ npm run bench       # local micro-benchmarks
 | `06-robots-retry-pagination.js` | `Retry-After`, truncated responses, `robots.txt`, duplicate pagination |
 | `07-transport-fingerprint-storage.js` | Transport parity, fingerprint coherence, storage backends, SimHash, adaptive throttling, webhooks, compliance |
 | `08-network-capture.js` | HAR round trip, capture proxy, CDP session handling, WebSocket framing, endpoint analysis |
+| `09-security-redirect.js` | Redirect guard per hop, credential stripping, private IPv6 classification, cross-host budget, proxy header stripping |
 
 ## Version history
 
 | Version | Changes |
 |---|---|
+| 5.2.0 | Redirect hops go through the security guard, cross-origin redirects drop `Authorization` and `Cookie`, the pinned lookup is dropped when the host changes, every `::ffff:` IPv6 form is classified, `CaptureProxy` strips `Proxy-Authorization`, `PaginationDetector` and the `capture` namespace are typed, and `test/types/usage.ts` is part of `npm run typecheck` |
 | 5.1.0 | Network capture: `NetworkCapture`, `CdpCapture`, `CaptureProxy`, `PlaywrightCapture`, `HarImporter`, and the `sengkrep capture` command |
 | 5.0.0 | Package renamed to `sengkrep`. Main class renamed to `Sengkrep`, result metadata moved to `data._sengkrep`, state files named `.sengkrep*` |
 | 4.0.0 | Unified transport, coherent browser fingerprints, adaptive throttling, content dedup, storage backends, distributed queue leases, compliance mode, Prometheus metrics |
@@ -679,6 +682,12 @@ plugins.beforeRequest
 **Fingerprints.** A single browser profile drives the User-Agent and client hints together, so `Sec-CH-UA` never contradicts the UA. `Accept-Encoding` only advertises `zstd` when the running Node build can decompress it. `rotateUAOnEachRequest` defaults to `false`, because real browsers keep one identity for a session.
 
 **Compliance.** `robots.txt`, `Retry-After`, `X-Robots-Tag`, audit logs and field masking are off by default and only run when configured. What the library does with them is up to you.
+
+**Redirects.** Every hop is checked, not just the first URL. When a hop changes origin, `Authorization`, `Cookie`, `Proxy-Authorization`, `X-Api-Key` and `X-Auth-Token` are dropped and any pinned IP is released, so the new host resolves on its own. A 302 or 303 turns a POST into a bodyless GET, while 307 and 308 keep the method and body. Chains that cross more than `maxCrossHostHops` hosts stop with `TOO_MANY_REDIRECTS`.
+
+### Migrating to 5.2.0
+
+If a target relied on credentials being replayed across a cross-origin redirect, set `redirectPolicy: { forwardSensitiveHeaders: true }` to restore that. If a target relied on the IP pinned for the first host, redirects to a different host now re-resolve, which is the intended fix for DNS rebinding. `redirectPolicy.validateEachHop` can be turned off, but leaving it on is the point of the release.
 
 ## License
 

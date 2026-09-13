@@ -61,6 +61,47 @@ function handler(req, res) {
     return res.end();
   }
 
+  if (url.pathname === '/echo-request') {
+    let body = '';
+    req.on('data', (chunk) => body += chunk);
+    req.on('end', () => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        method: req.method,
+        body,
+        authorization: req.headers.authorization || null,
+        cookie: req.headers.cookie || null,
+        proxyAuthorization: req.headers['proxy-authorization'] || null,
+      }));
+    });
+    return;
+  }
+
+  if (url.pathname === '/redirect-cross-origin') {
+    res.writeHead(302, { Location: 'http://localhost:9911/redirect-cross-origin-2' });
+    return res.end();
+  }
+
+  if (url.pathname === '/redirect-cross-origin-2') {
+    res.writeHead(302, { Location: 'http://127.0.0.1:9911/echo-request' });
+    return res.end();
+  }
+
+  if (url.pathname === '/redirect-to-localhost') {
+    res.writeHead(302, { Location: 'http://localhost:9911/private/secret' });
+    return res.end();
+  }
+
+  if (url.pathname === '/redirect-302-post') {
+    res.writeHead(302, { Location: '/echo-request' });
+    return res.end();
+  }
+
+  if (url.pathname === '/redirect-307-post') {
+    res.writeHead(307, { Location: '/echo-request' });
+    return res.end();
+  }
+
   if (url.pathname === '/setcookie') {
     res.writeHead(200, { 'Set-Cookie': ['session=abc123; Path=/', 'theme=dark; Path=/'], 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ ok: true }));

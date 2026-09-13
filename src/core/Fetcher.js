@@ -5,6 +5,7 @@ const fs    = require('fs');
 const os    = require('os');
 const path  = require('path');
 const { createHttpsAgent, routeHttpThroughProxy } = require('./ProxyTunnel');
+const { buildRedirectPolicy, originsDiffer, prepareRedirectHop } = require('./redirect');
 const contentSafety = require('../utils/contentSafety');
 const { version } = require('../../package.json');
 
@@ -75,6 +76,8 @@ class Fetcher {
     this.connectTimeout = options.connectTimeout ?? null;
     this.totalTimeout   = options.totalTimeout   ?? null;
     this._tempFiles     = new Set();
+
+    this.redirectPolicy = buildRedirectPolicy(options.redirectPolicy);
   }
 
   sweepStreamFiles(ttlMs = 3600000) {
@@ -194,11 +197,13 @@ class Fetcher {
     });
   }
 
-  _rawFetch(url, config, hops = 0) {
+  _rawFetch(url, config, hops = 0, redirectState = null) {
     return new Promise((resolve, reject) => {
       if (hops > this.maxRedirects) {
         return reject(new FetchError('Max redirects exceeded', null, 'TOO_MANY_REDIRECTS'));
       }
+
+      const state = redirectState ?? { crossHostHops: 0 };
 
       let parsed;
       try {
@@ -282,16 +287,28 @@ class Fetcher {
 
         if ([301, 302, 303, 307, 308].includes(statusCode) && resHeaders.location) {
           res.resume();
-          let nextConfig = config;
-          if ([301, 302, 303].includes(statusCode) && !['GET', 'HEAD'].includes(config.method)) {
-            nextConfig = { ...config, method: 'GET', body: null };
-          }
+
+          let next;
           try {
-            const next = new URL(resHeaders.location, url).href;
-            return finish(resolve, this._rawFetch(next, nextConfig, hops + 1));
+            next = new URL(resHeaders.location, url).href;
           } catch {
             return finish(reject, new FetchError(`Bad redirect location: ${resHeaders.location}`, statusCode, 'BAD_REDIRECT'));
           }
+
+          const crossOrigin = originsDiffer(url, next);
+          if (crossOrigin) {
+            state.crossHostHops += 1;
+            if (state.crossHostHops > this.redirectPolicy.maxCrossHostHops) {
+              return finish(reject, new FetchError(
+                `Too many cross-host redirects (> ${this.redirectPolicy.maxCrossHostHops}): ${next}`,
+                statusCode,
+                'TOO_MANY_REDIRECTS',
+              ));
+            }
+          }
+
+          return finish(resolve, prepareRedirectHop(config, this.redirectPolicy, { url, next, statusCode, hops })
+            .then(({ hopConfig }) => this._rawFetch(next, hopConfig, hops + 1, state)));
         }
 
         if (statusCode === 304) {
@@ -399,6 +416,7 @@ class Fetcher {
       connectTimeout:     options.connectTimeout      ?? this.connectTimeout ?? undefined,
       totalTimeout:       options.totalTimeout        ?? this.totalTimeout   ?? undefined,
       lookup:             options.lookup              ?? null,
+      onRedirect:         options.onRedirect          ?? null,
       rejectUnauthorized: options.rejectUnauthorized   ?? undefined,
       bufferAll:          options.bufferAll            ?? false,
       verifyLength:       options.verifyLength         ?? true,

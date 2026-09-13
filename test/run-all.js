@@ -10,6 +10,7 @@ const FILES = [
   '06-robots-retry-pagination.js',
   '07-transport-fingerprint-storage.js',
   '08-network-capture.js',
+  '09-security-redirect.js',
 ];
 
 let failed = 0;

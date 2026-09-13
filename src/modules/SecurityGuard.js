@@ -26,14 +26,27 @@ function isPrivateIPv4(ip) {
   return null;
 }
 
+function ipv4FromMapped(lower) {
+  const rest = lower.slice(7);
+  if (net.isIPv4(rest)) return rest;
+
+  const parts = rest.split(':');
+  if (parts.length !== 2) return null;
+  if (!/^[0-9a-f]{1,4}$/.test(parts[0]) || !/^[0-9a-f]{1,4}$/.test(parts[1])) return null;
+
+  const high = parseInt(parts[0], 16);
+  const low  = parseInt(parts[1], 16);
+  return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
+}
+
 function isPrivateIPv6(ip) {
   const lower = ip.toLowerCase();
   if (lower === '::1') return 'loopback';
   if (lower.startsWith('fe80:')) return 'link-local';
   if (/^f[cd][0-9a-f]{2}:/.test(lower)) return 'unique-local';
   if (lower.startsWith('::ffff:')) {
-    const v4 = lower.slice(7);
-    if (net.isIPv4(v4)) return isPrivateIPv4(v4);
+    const v4 = ipv4FromMapped(lower);
+    if (v4) return isPrivateIPv4(v4);
   }
   return null;
 }
@@ -121,4 +134,4 @@ class SecurityGuard {
   }
 }
 
-module.exports = { SecurityGuard, SecurityError, classifyIP, globToRegExp };
+module.exports = { SecurityGuard, SecurityError, classifyIP, globToRegExp, ipv4FromMapped };
