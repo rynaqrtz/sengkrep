@@ -40,7 +40,7 @@ Runtime dependency: cheerio. Everything else is Node built-ins.
 npm install sengkrep
 ```
 
-Node 18 or newer. Node 22.5 or newer additionally enables the `sqlite` storage backend via `node:sqlite`.
+Node 20.18.1 or newer, which is what the `cheerio` dependency requires. Node 22.5 or newer additionally enables the `sqlite` storage backend via `node:sqlite`.
 
 The package was published as `sengkrep-ryna` up to 3.4.0. That name is no longer maintained.
 

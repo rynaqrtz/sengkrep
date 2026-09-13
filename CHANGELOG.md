@@ -2,6 +2,12 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Fixed
+
+- `engines.node` said `>=18.0.0`, but the `cheerio` dependency pulls `undici`, which needs Node 20.18.1 or newer. On Node 18 the package could not even be loaded, so the declared support was wrong. Raised to `>=20.18.1` and dropped Node 18 from CI, which had been failing on every run since.
+
 ## 5.3.0
 
 ### Added
