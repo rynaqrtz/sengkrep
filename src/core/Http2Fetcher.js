@@ -96,7 +96,11 @@ class Http2Fetcher {
       }
 
       const headers = this.fingerprint
-        ? this.fingerprint.buildHeaders(config.headers ?? {})
+        ? this.fingerprint.buildHeaders(config.headers ?? {}, {
+          method: config.method,
+          targetUrl: url,
+          referer: config.headers?.referer ?? config.headers?.Referer ?? null,
+        })
         : { 'user-agent': `sengkrep/${version}`, ...(config.headers ?? {}) };
 
       delete headers['Connection'];

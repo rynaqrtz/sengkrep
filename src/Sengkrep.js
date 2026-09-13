@@ -39,6 +39,7 @@ const { inferSchema }                       = require('./modules/SchemaInference
 const { DistributedQueue, MemoryAdapter }   = require('./modules/DistributedQueue');
 const AdaptiveThrottle                     = require('./modules/AdaptiveThrottle');
 const SingleFlight                         = require('./modules/SingleFlight');
+const Scheduler                            = require('./modules/Scheduler');
 const ContentDedup                         = require('./modules/ContentDedup');
 const Logger                               = require('./utils/logger');
 const { exportData }                       = require('./utils/exporter');
@@ -149,6 +150,13 @@ class Sengkrep {
 
     this.singleFlight = new SingleFlight(options.singleFlight ?? {});
     this._background  = new Set();
+
+    this.scheduler = options.scheduler
+      ? new Scheduler({
+          ...(typeof options.scheduler === 'object' ? options.scheduler : {}),
+          logger: this.logger,
+        })
+      : null;
 
     this.transport.sweepStreamFiles(options.tempFileTtl ?? 3600000);
 
@@ -911,6 +919,7 @@ class Sengkrep {
   }
 
   close() {
+    if (this.scheduler) this.scheduler.stop({ wait: false });
     this.transport.close();
     this.observability.close();
   }

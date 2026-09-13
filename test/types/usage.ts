@@ -12,8 +12,12 @@ import type {
   CdpRenderer,
   CdpRenderResult,
   CookieJar,
+  JobRecord,
   PaginationNext,
   RawResponse,
+  Schedule,
+  Scheduler,
+  SchedulerStats,
   Sengkrep,
   SengkrepOptions,
   SingleFlightStats,
@@ -25,6 +29,7 @@ const options: SengkrepOptions = {
   retry: { max: 2 },
   singleFlight: { enabled: true, maxKeys: 500 },
   cache: { ttl: 60, staleWhileRevalidate: true, staleTtl: 300 },
+  scheduler: { backend: 'memory', catchUp: true, jobs: [{ id: 'sync', schedule: { every: '1h' } }] },
   redirectPolicy: { validateEachHop: true, forwardSensitiveHeaders: false, maxCrossHostHops: 2 },
   security: { allowDomains: ['example.com'], blockPrivateIPs: false },
 };
@@ -123,3 +128,26 @@ async function sharedRequests(): Promise<number> {
 }
 
 void sharedRequests;
+
+async function scheduled(): Promise<SchedulerStats> {
+  const scheduler: Scheduler | null = client.scheduler;
+  const schedule: Schedule = '*/5 * * * *';
+
+  if (scheduler) {
+    const record: JobRecord = scheduler.add({ id: 'sync', schedule }, (job: JobRecord, own: Scheduler) => {
+      void job.runs;
+      void own.stats();
+    });
+    scheduler.on('run', (event) => { void event.job.id; });
+    scheduler.on('run:error', (event) => { void event.error.message; });
+    scheduler.on('tick', (event) => { void event.started; });
+    void record.nextRunAt;
+    await scheduler.start();
+    await scheduler.tick();
+    await scheduler.runNow('sync');
+  }
+
+  return scheduler ? scheduler.stats() : { ticks: 0, runs: 0, errors: 0, skipped: 0, jobs: 0, enabled: 0, running: 0, started: false };
+}
+
+void scheduled;

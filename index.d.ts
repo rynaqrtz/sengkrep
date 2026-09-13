@@ -271,6 +271,100 @@ export interface SingleFlightStats {
   inflight: number;
 }
 
+export interface ScheduleInterval {
+  every?: string | number;
+  everyMs?: number;
+  ms?: number;
+}
+
+export interface ScheduleOnce {
+  at: string | number | Date;
+}
+
+export type Schedule = string | ScheduleInterval | ScheduleOnce;
+
+export interface JobRecord {
+  id: string;
+  name: string;
+  schedule: Schedule;
+  enabled: boolean;
+  data: unknown;
+  nextRunAt: number | null;
+  lastRunAt: string | null;
+  lastStatus: 'ok' | 'error' | null;
+  lastError: string | null;
+  lastDurationMs: number | null;
+  runs: number;
+  failures: number;
+  missed: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduledJob {
+  id: string;
+  schedule?: Schedule;
+  name?: string;
+  enabled?: boolean;
+  data?: unknown;
+  nextRunAt?: number;
+  handler?: (job: JobRecord & { runCount: number }, scheduler: Scheduler) => Promise<unknown> | unknown;
+}
+
+export interface SchedulerOptions extends JobStoreOptions {
+  concurrency?: number;
+  catchUp?: boolean;
+  pollInterval?: number;
+  now?: () => number;
+  logger?: unknown;
+  jobs?: ScheduledJob[];
+  store?: JobStore;
+}
+
+export interface SchedulerRunEvent {
+  job: JobRecord;
+  result: unknown;
+}
+
+export interface SchedulerErrorEvent {
+  job: JobRecord;
+  error: Error;
+}
+
+export interface SchedulerTickEvent {
+  at: number;
+  started: number;
+}
+
+export interface SchedulerStats {
+  ticks: number;
+  runs: number;
+  errors: number;
+  skipped: number;
+  jobs: number;
+  enabled: number;
+  running: number;
+  started: boolean;
+}
+
+export interface JobStoreOptions {
+  backend?: StorageBackend;
+  storageDir?: string;
+  file?: string;
+  table?: string;
+  storage?: { get(key: string): { data: unknown } | null; set(key: string, value: unknown): unknown; delete(key: string): unknown; list(): string[] };
+}
+
+export interface CronModule {
+  parseCron(expression: string): Record<string, unknown>;
+  nextCronTime(parsed: Record<string, unknown>, from: number): number | null;
+  parseDuration(value: string | number): number;
+  formatDuration(ms: number): string;
+  nextRunTime(schedule: Schedule, options?: { now?: number; lastRunAt?: number }): number | null;
+  scheduleKind(schedule: Schedule): 'cron' | 'interval' | 'once';
+  scheduleLabel(schedule: Schedule): string;
+}
+
 export type StorageBackend = 'file' | 'memory' | 'sqlite';
 
 export interface StorageOptions {
@@ -448,6 +542,7 @@ export interface SengkrepOptions {
   renderer?: RendererInput;
   render?: boolean;
   singleFlight?: SingleFlightOptions | boolean;
+  scheduler?: SchedulerOptions | boolean;
   robotsTtl?: number;
   tempFileTtl?: number;
   connectTimeout?: number;
@@ -521,11 +616,17 @@ export interface BrowserProfile {
   ua: string;
 }
 
+export interface FingerprintContext {
+  referer?: string;
+  targetUrl?: string;
+  method?: string;
+}
+
 export class Fingerprint {
   constructor(options?: FingerprintOptions);
   readonly profile: BrowserProfile;
   setProfile(id: string): BrowserProfile;
-  buildHeaders(extra?: Record<string, string>, context?: { referer?: string; targetUrl?: string } | null): Record<string, string>;
+  buildHeaders(extra?: Record<string, string>, context?: FingerprintContext | null): Record<string, string>;
   getUA(): string;
   delay(base?: number): Promise<void>;
   humanDelay(min?: number, max?: number): Promise<void>;
@@ -567,6 +668,54 @@ export class SingleFlight {
   run<T>(key: string, fn: () => Promise<T> | T): Promise<T>;
   stats(): SingleFlightStats;
   clear(): void;
+}
+
+export class JobStore {
+  constructor(options?: JobStoreOptions);
+  storage: { get(key: string): { data: unknown } | null; set(key: string, value: unknown): unknown; delete(key: string): unknown; list(): string[] };
+  key(id: string): string;
+  save(job: JobRecord): JobRecord;
+  get(id: string): JobRecord | null;
+  has(id: string): boolean;
+  list(): string[];
+  all(): JobRecord[];
+  delete(id: string): boolean;
+  clear(): boolean;
+}
+
+export class Scheduler {
+  constructor(options?: SchedulerOptions | boolean);
+  logger: unknown;
+  now: () => number;
+  concurrency: number;
+  catchUp: boolean;
+  pollInterval: number;
+  store: JobStore;
+  readonly started: boolean;
+  add(job: ScheduledJob, handler: (job: JobRecord & { runCount: number }, scheduler: Scheduler) => Promise<unknown> | unknown): JobRecord;
+  remove(id: string): boolean;
+  get(id: string): JobRecord | null;
+  list(): JobRecord[];
+  has(id: string): boolean;
+  pause(id: string): JobRecord;
+  resume(id: string): JobRecord;
+  start(): Promise<Scheduler>;
+  tick(): Promise<number>;
+  runNow(id: string): Promise<JobRecord | null>;
+  stop(options?: { wait?: boolean }): Promise<Scheduler>;
+  stats(): SchedulerStats;
+  on(event: 'run', listener: (event: SchedulerRunEvent) => void): this;
+  on(event: 'run:error', listener: (event: SchedulerErrorEvent) => void): this;
+  on(event: 'tick', listener: (event: SchedulerTickEvent) => void): this;
+  on(event: 'start' | 'stop', listener: () => void): this;
+  on(event: string, listener: (...args: never[]) => void): this;
+  once(event: 'run', listener: (event: SchedulerRunEvent) => void): this;
+  once(event: 'run:error', listener: (event: SchedulerErrorEvent) => void): this;
+  once(event: 'tick', listener: (event: SchedulerTickEvent) => void): this;
+  once(event: 'start' | 'stop', listener: () => void): this;
+  once(event: string, listener: (...args: never[]) => void): this;
+  off(event: string, listener: (...args: never[]) => void): this;
+  emit(event: string, payload?: unknown): boolean;
 }
 
 export class Cache {
@@ -1377,6 +1526,7 @@ export class Sengkrep {
   graphql: GraphQLClient;
   transport: Transport;
   singleFlight: SingleFlight;
+  scheduler: Scheduler | null;
   adaptive: AdaptiveThrottle | null;
   contentDedup: ContentDedup | null;
   compliance: ComplianceOptions | null;
@@ -1505,6 +1655,9 @@ export interface SengkrepStatic {
   Transport: typeof Transport;
   AdaptiveThrottle: typeof AdaptiveThrottle;
   SingleFlight: typeof SingleFlight;
+  Scheduler: typeof Scheduler;
+  JobStore: typeof JobStore;
+  cron: CronModule;
   ContentDedup: typeof ContentDedup;
   SqliteStorage: typeof SqliteStorage;
   Storage: typeof Storage;

@@ -13,6 +13,7 @@ const FILES = [
   '09-security-redirect.js',
   '10-renderer-and-codegen.js',
   '11-single-flight-and-cache.js',
+  '12-scheduler.js',
 ];
 
 let failed = 0;

@@ -80,6 +80,67 @@ async function main() {
     assert.strictEqual(Fingerprint.PROFILES.length > 3, true);
   });
 
+  await test('fingerprint sends navigation headers for a plain GET', () => {
+    const fp = new Fingerprint({ profile: 'chrome-windows', randomizeHeaderOrder: false });
+    const headers = fp.buildHeaders({}, { method: 'GET', targetUrl: `${BASE}/html` });
+
+    assert.strictEqual(headers['Sec-Fetch-Dest'], 'document');
+    assert.strictEqual(headers['Sec-Fetch-Mode'], 'navigate');
+    assert.strictEqual(headers['Sec-Fetch-User'], '?1');
+    assert.strictEqual(headers['Upgrade-Insecure-Requests'], '1');
+    assert.ok(headers['Accept'].includes('text/html'));
+  });
+
+  await test('fingerprint sends fetch headers for a JSON request', () => {
+    const fp = new Fingerprint({ profile: 'chrome-windows', randomizeHeaderOrder: false });
+    const headers = fp.buildHeaders({ accept: 'application/json' }, { method: 'GET', targetUrl: `${BASE}/json` });
+
+    assert.strictEqual(headers['Sec-Fetch-Dest'], 'empty');
+    assert.strictEqual(headers['Sec-Fetch-Mode'], 'cors');
+    assert.strictEqual(headers['Sec-Fetch-User'], undefined);
+    assert.strictEqual(headers['Upgrade-Insecure-Requests'], undefined);
+    assert.strictEqual(headers['accept'], 'application/json');
+  });
+
+  await test('fingerprint treats a request with a body as a subresource', () => {
+    const fp = new Fingerprint({ profile: 'chrome-windows', randomizeHeaderOrder: false });
+    const headers = fp.buildHeaders({}, { method: 'POST', targetUrl: `${BASE}/login` });
+
+    assert.strictEqual(headers['Sec-Fetch-Dest'], 'empty');
+    assert.strictEqual(headers['Sec-Fetch-Mode'], 'cors');
+    assert.strictEqual(headers['Sec-Fetch-User'], undefined);
+    assert.strictEqual(headers['Accept'], '*/*');
+  });
+
+  await test('fingerprint lets caller headers win without leaving a duplicate case', () => {
+    const fp = new Fingerprint({ profile: 'chrome-windows', randomizeHeaderOrder: false });
+    const headers = fp.buildHeaders({ 'user-agent': 'custom/1.0', accept: 'application/json' }, { method: 'GET', targetUrl: `${BASE}/json` });
+    const names = Object.keys(headers).map((name) => name.toLowerCase());
+
+    assert.strictEqual(names.filter((name) => name === 'user-agent').length, 1);
+    assert.strictEqual(names.filter((name) => name === 'accept').length, 1);
+    assert.strictEqual(headers['user-agent'], 'custom/1.0');
+    assert.strictEqual(headers['accept'], 'application/json');
+  });
+
+  await test('fingerprint headers reach the server as a fetch, not a page load', async () => {
+    const scraper = sengkrep.create({ logLevel: 'error', retry: { max: 0 } });
+
+    const plain = await scraper.fetch(`${BASE}/echo-headers`);
+    const plainHeaders = JSON.parse(plain.body).headers;
+    assert.strictEqual(plainHeaders['sec-fetch-dest'], 'document');
+    assert.strictEqual(plainHeaders['sec-fetch-mode'], 'navigate');
+
+    const api = await scraper.fetch(`${BASE}/echo-headers`, { request: { headers: { accept: 'application/json' } } });
+    const apiHeaders = JSON.parse(api.body).headers;
+    assert.strictEqual(apiHeaders['sec-fetch-dest'], 'empty');
+    assert.strictEqual(apiHeaders['sec-fetch-mode'], 'cors');
+    assert.strictEqual(apiHeaders['sec-fetch-user'], undefined);
+    assert.strictEqual(apiHeaders.accept, 'application/json');
+
+    scraper.close();
+  });
+
   await test('rate limiter serializes concurrent acquires per host', async () => {
     const limiter = new RateLimiter({ requestsPerSecond: 25 });
     const start = Date.now();

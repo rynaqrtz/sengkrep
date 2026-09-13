@@ -2,6 +2,20 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 5.5.0
+
+### Added
+
+- `Scheduler` and `sengkrep.Scheduler`. Jobs run on a five-field cron expression in UTC, an interval (`{ every: '30s' }`, `{ everyMs }` or `{ ms }`) or a single time (`{ at }`). A job whose slot arrives while it is still running is skipped, `concurrency` caps how many different jobs run at once, and `runNow`, `pause`, `resume`, `remove` and `tick` are available. Events are `run`, `run:error`, `tick`, `start` and `stop`.
+- `JobStore` and `sengkrep.JobStore`. Job records live behind the same `file`, `memory` and `sqlite` backends as the cache, so `nextRunAt`, the last status and the run counters survive a restart. Any object with `get`, `set`, `delete` and `list` can be injected instead.
+- `sengkrep.cron` exposes `parseCron`, `nextCronTime`, `parseDuration`, `formatDuration`, `nextRunTime`, `scheduleKind` and `scheduleLabel` for inspecting a schedule without running it.
+- `create({ scheduler })` wires a scheduler into the instance, including jobs declared inline with a handler. `scraper.close()` stops it.
+
+### Fixed
+
+- The fingerprint sent navigation headers on every request, so a POST or a JSON call still claimed `Sec-Fetch-Dest: document` with `Sec-Fetch-Mode: navigate`. The headers now follow the request: `document` and `navigate` for a plain GET, `empty` and `cors` for a request that asks for JSON or carries a body, and `Sec-Fetch-Site` is derived from a `Referer` header when one is set.
+- Caller headers now override generated ones case-insensitively. Passing `accept` used to leave both `accept` and `Accept` on the same request, and which one won depended on the randomized header order.
+
 ## 5.4.0
 
 ### Added

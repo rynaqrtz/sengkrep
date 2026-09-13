@@ -227,7 +227,11 @@ class Fetcher {
       const lib     = isHttps ? https : http;
 
       const headers = this.fingerprint
-        ? this.fingerprint.buildHeaders(config.headers ?? {})
+        ? this.fingerprint.buildHeaders(config.headers ?? {}, {
+          method: config.method,
+          targetUrl: url,
+          referer: config.headers?.Referer ?? config.headers?.referer ?? null,
+        })
         : { 'User-Agent': `sengkrep/${version}`, ...(config.headers ?? {}) };
 
       if (this.cookieJar && !headers['Cookie']) {

@@ -156,25 +156,54 @@ class Fingerprint {
     }
   }
 
+  _headerValue(headers, name) {
+    const wanted = String(name).toLowerCase();
+    for (const [key, value] of Object.entries(headers ?? {})) {
+      if (key.toLowerCase() === wanted) return value;
+    }
+    return null;
+  }
+
+  _requestKind(extra, method) {
+    const accept = String(this._headerValue(extra, 'accept') ?? '').toLowerCase();
+    if (/application\/(?:.+\+)?json|application\/graphql/.test(accept)) return 'json';
+    if (/text\/html|application\/xhtml\+xml/.test(accept)) return 'document';
+    if (accept) return 'resource';
+    return method === 'GET' || method === 'HEAD' ? 'document' : 'resource';
+  }
+
   buildHeaders(extra = {}, context = null) {
     if (this.options.rotateUAOnEachRequest) this._current = this._select();
     const profile = this._current;
     const ua = profile.ua;
     const lang = this.options.language ?? this._pick(ACCEPT_LANGUAGES);
     const site = this._secFetchSite(context);
+    const method = String(context?.method ?? 'GET').toUpperCase();
+    const kind = this._requestKind(extra, method);
+    const navigation = kind === 'document';
 
     const base = {
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept': navigation
+        ? 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
+        : kind === 'json'
+          ? 'application/json, text/plain, */*'
+          : '*/*',
       'Accept-Language': lang,
       'Accept-Encoding': ACCEPT_ENCODING,
       'User-Agent': ua,
       'Connection': 'keep-alive',
-      'Upgrade-Insecure-Requests': '1',
     };
 
+    if (navigation) base['Upgrade-Insecure-Requests'] = '1';
     if (context?.referer) base['Referer'] = context.referer;
-
     if (Math.random() > 0.5) base['Cache-Control'] = this._pick(['no-cache', 'max-age=0']);
+
+    const secFetch = {
+      'Sec-Fetch-Dest': navigation ? 'document' : 'empty',
+      'Sec-Fetch-Mode': navigation ? 'navigate' : 'cors',
+      'Sec-Fetch-Site': site,
+    };
+    if (navigation) secFetch['Sec-Fetch-User'] = '?1';
 
     const brands = clientHintBrands(profile.browser, ua);
 
@@ -185,22 +214,21 @@ class Fingerprint {
       if (profile.platformVersion && profile.platformVersion !== '""') {
         base['Sec-CH-UA-Platform-Version'] = profile.platformVersion;
       }
-      base['Sec-Fetch-Dest'] = 'document';
-      base['Sec-Fetch-Mode'] = site === 'none' ? 'navigate' : 'cors';
-      base['Sec-Fetch-Site'] = site;
-      base['Sec-Fetch-User'] = '?1';
+      Object.assign(base, secFetch);
       if (Math.random() > 0.6) base['DNT'] = '1';
     }
 
     if (profile.browser === 'firefox') {
-      base['Sec-Fetch-Dest'] = 'document';
-      base['Sec-Fetch-Mode'] = site === 'none' ? 'navigate' : 'cors';
-      base['Sec-Fetch-Site'] = site;
-      base['Sec-Fetch-User'] = '?1';
+      Object.assign(base, secFetch);
       base['TE'] = 'trailers';
     }
 
-    const merged = { ...base, ...extra };
+    const merged = { ...base };
+    for (const [key, value] of Object.entries(extra)) {
+      const clash = Object.keys(merged).find((name) => name !== key && name.toLowerCase() === key.toLowerCase());
+      if (clash) delete merged[clash];
+      merged[key] = value;
+    }
 
     if (this.options.randomizeHeaderOrder) {
       const entries = Object.entries(merged);
