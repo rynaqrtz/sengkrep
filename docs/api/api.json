@@ -1,0 +1,3218 @@
+{
+  "generatedFrom": "index.d.ts",
+  "hash": "3884afd34b684b5937a9db352c988592580b26ed",
+  "counts": {
+    "type": 16,
+    "interface": 111,
+    "class": 67,
+    "function": 3
+  },
+  "categories": {
+    "Types": [
+      "FieldSelector",
+      "JsonSchema",
+      "JsonSchemaField",
+      "RenderOutput",
+      "Schema",
+      "SchemaField",
+      "StorageBackend"
+    ],
+    "Interfaces": [
+      "BrowserProfile",
+      "CacheLookup",
+      "CrawlJob",
+      "DiffChange",
+      "DistributedAdapter",
+      "FieldDefinition",
+      "FingerprintContext",
+      "HealthAlert",
+      "JsonFieldDefinition",
+      "PaginationDetectorModule",
+      "PaginationNext",
+      "ParsedForm",
+      "PluginHooks",
+      "RawResponse",
+      "S3PutRequest",
+      "SchemaInferenceField",
+      "SengkrepMeta",
+      "SengkrepStatic",
+      "SqlStatement",
+      "ValidationErrorDetail",
+      "ValidationRule"
+    ],
+    "Results": [
+      "BatchResult",
+      "CacheStats",
+      "DiffReport",
+      "DistributedQueueResult",
+      "ExtractResult",
+      "HealthReport",
+      "ObservabilityReport",
+      "RateLimitInfo",
+      "SchemaInferenceResult",
+      "SingleFlightStats",
+      "ValidationReport",
+      "WebhookDeliveryResult"
+    ],
+    "Options": [
+      "AdaptiveThrottleOptions",
+      "AuthOptions",
+      "BatchOptions",
+      "CacheOptions",
+      "CircuitBreakerOptions",
+      "ComplianceOptions",
+      "ContentDedupOptions",
+      "CrawlOptions",
+      "CsrfOptions",
+      "DiffOptions",
+      "ExtractOptions",
+      "FingerprintOptions",
+      "HealthOptions",
+      "ObservabilityOptions",
+      "PaginationConfig",
+      "RateLimitOptions",
+      "RedirectPolicyOptions",
+      "RequestConfig",
+      "RetryOptions",
+      "SecurityOptions",
+      "SengkrepOptions",
+      "SingleFlightOptions",
+      "StorageOptions",
+      "WebhookOptions"
+    ],
+    "Scheduling": [
+      "CronModule",
+      "JobRecord",
+      "JobStore",
+      "JobStoreOptions",
+      "Schedule",
+      "ScheduledJob",
+      "ScheduleInterval",
+      "ScheduleOnce",
+      "Scheduler",
+      "SchedulerErrorEvent",
+      "SchedulerOptions",
+      "SchedulerRunEvent",
+      "SchedulerStats",
+      "SchedulerTickEvent"
+    ],
+    "Classes": [
+      "AdaptiveThrottle",
+      "AuthManager",
+      "Cache",
+      "CircuitBreaker",
+      "ContentDedup",
+      "CrawlQueue",
+      "CsrfHandler",
+      "DiffDetector",
+      "Discover",
+      "DistributedQueue",
+      "DnsCache",
+      "Fetcher",
+      "Fingerprint",
+      "FormHandler",
+      "GraphQLClient",
+      "HealthMonitor",
+      "Http2Fetcher",
+      "Incremental",
+      "Interceptors",
+      "MemoryAdapter",
+      "MemoryStorage",
+      "Observability",
+      "PluginSystem",
+      "ProgressBar",
+      "ProxyRotator",
+      "RateLimiter",
+      "Retry",
+      "SchemaValidator",
+      "SecurityGuard",
+      "Sengkrep",
+      "SingleFlight",
+      "SqliteStorage",
+      "Storage",
+      "StreamWriter",
+      "Transport",
+      "UrlDeduplicator",
+      "Webhook",
+      "WordPress"
+    ],
+    "Functions": [
+      "createStorage"
+    ],
+    "Network capture": [
+      "CaptureAnalyze",
+      "CaptureAnalyzeOptions",
+      "CaptureCodegen",
+      "CaptureCookie",
+      "CaptureCookies",
+      "CaptureDecodeResult",
+      "CaptureEndpoint",
+      "CaptureEndpointOptions",
+      "CaptureEntry",
+      "CaptureEntryClassifyInput",
+      "CaptureEntryInit",
+      "CaptureEntryModule",
+      "CaptureFilter",
+      "CaptureHeaders",
+      "CaptureJsonSchema",
+      "CaptureProxy",
+      "CaptureProxyAddress",
+      "CaptureProxyOptions",
+      "CaptureSchemaOptions",
+      "CaptureScriptOptions",
+      "CaptureSummary",
+      "CaptureWebSocketClient",
+      "CaptureWebSocketFrame",
+      "CaptureWebSocketFrameRecord",
+      "CaptureWs",
+      "CdpCapture",
+      "CdpCaptureOptions",
+      "CdpCaptureResult",
+      "CdpClient",
+      "CdpRenderer",
+      "CdpRendererOptions",
+      "CdpRenderResult",
+      "CdpSession",
+      "CdpTargetDescription",
+      "CookieImportOptions",
+      "CookieJar",
+      "createCdpRenderer",
+      "HarLog",
+      "HarRecorder",
+      "NetworkCapture",
+      "PlaywrightAttachment",
+      "PlaywrightCapture",
+      "PlaywrightCaptureOptions",
+      "RendererFn",
+      "RendererInput",
+      "SessionPool",
+      "SessionPoolOptions",
+      "SessionPoolSession"
+    ],
+    "Errors": [
+      "CanceledError",
+      "CircuitOpenError",
+      "ExtractionError",
+      "FetchError",
+      "Http2Error",
+      "JsonExtractionError",
+      "ProxyError",
+      "SecurityError",
+      "TimeoutError",
+      "ValidationError"
+    ],
+    "Data sinks": [
+      "ClickHouseSink",
+      "ClickHouseSinkOptions",
+      "createSink",
+      "FileSink",
+      "FileSinkFormat",
+      "FileSinkOptions",
+      "MemorySink",
+      "MySQLSink",
+      "MySQLSinkOptions",
+      "PostgresSink",
+      "PostgresSinkOptions",
+      "S3Sink",
+      "S3SinkFormat",
+      "S3SinkOptions",
+      "Sink",
+      "SinkDescriptor",
+      "SinkInput",
+      "SinkKey",
+      "SinkOptions",
+      "SinkStats",
+      "SqlSink",
+      "SqlSinkOptions"
+    ]
+  },
+  "declarations": [
+    {
+      "name": "FieldSelector",
+      "kind": "type",
+      "slug": "field-selector",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "FieldDefinition",
+      "kind": "interface",
+      "slug": "field-definition",
+      "category": "Interfaces",
+      "properties": [
+        "selector",
+        "required",
+        "multiple",
+        "attr",
+        "type",
+        "transform",
+        "pattern",
+        "default"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SchemaField",
+      "kind": "type",
+      "slug": "schema-field",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "Schema",
+      "kind": "type",
+      "slug": "schema",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "JsonFieldDefinition",
+      "kind": "interface",
+      "slug": "json-field-definition",
+      "category": "Interfaces",
+      "properties": [
+        "path",
+        "required",
+        "transform",
+        "pattern",
+        "default"
+      ],
+      "methods": []
+    },
+    {
+      "name": "JsonSchemaField",
+      "kind": "type",
+      "slug": "json-schema-field",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "JsonSchema",
+      "kind": "type",
+      "slug": "json-schema",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "HealthAlert",
+      "kind": "interface",
+      "slug": "health-alert",
+      "category": "Interfaces",
+      "properties": [
+        "field",
+        "selector",
+        "type",
+        "message"
+      ],
+      "methods": []
+    },
+    {
+      "name": "HealthReport",
+      "kind": "interface",
+      "slug": "health-report",
+      "category": "Results",
+      "properties": [
+        "url",
+        "alerts",
+        "healthy"
+      ],
+      "methods": []
+    },
+    {
+      "name": "DiffChange",
+      "kind": "interface",
+      "slug": "diff-change",
+      "category": "Interfaces",
+      "properties": [
+        "type",
+        "severity",
+        "key"
+      ],
+      "methods": []
+    },
+    {
+      "name": "DiffReport",
+      "kind": "interface",
+      "slug": "diff-report",
+      "category": "Results",
+      "properties": [
+        "url",
+        "firstRun",
+        "changes",
+        "hasCritical",
+        "hasWarn",
+        "previousTs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ValidationErrorDetail",
+      "kind": "interface",
+      "slug": "validation-error-detail",
+      "category": "Interfaces",
+      "properties": [
+        "field",
+        "rule",
+        "message"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ValidationReport",
+      "kind": "interface",
+      "slug": "validation-report",
+      "category": "Results",
+      "properties": [
+        "valid",
+        "errors",
+        "warnings"
+      ],
+      "methods": []
+    },
+    {
+      "name": "RateLimitInfo",
+      "kind": "interface",
+      "slug": "rate-limit-info",
+      "category": "Results",
+      "properties": [
+        "limit",
+        "remaining",
+        "resetSeconds"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SengkrepMeta",
+      "kind": "interface",
+      "slug": "sengkrep-meta",
+      "category": "Interfaces",
+      "properties": [
+        "responseType",
+        "cache",
+        "rendered",
+        "health",
+        "diff",
+        "validation",
+        "sniffedType",
+        "filePath",
+        "size",
+        "rateLimit"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ExtractResult",
+      "kind": "type",
+      "slug": "extract-result",
+      "category": "Results",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "RawResponse",
+      "kind": "interface",
+      "slug": "raw-response",
+      "category": "Interfaces",
+      "properties": [
+        "status",
+        "headers",
+        "url",
+        "body",
+        "binary",
+        "bodyBuffer",
+        "streamed",
+        "filePath",
+        "fromCache",
+        "stale",
+        "notModified",
+        "charset",
+        "sniffedType",
+        "size",
+        "rateLimit"
+      ],
+      "methods": []
+    },
+    {
+      "name": "RequestConfig",
+      "kind": "interface",
+      "slug": "request-config",
+      "category": "Options",
+      "properties": [
+        "method",
+        "headers",
+        "body",
+        "signal",
+        "rejectUnauthorized",
+        "timeout",
+        "proxy"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ExtractOptions",
+      "kind": "interface",
+      "slug": "extract-options",
+      "category": "Options",
+      "properties": [
+        "strict",
+        "responseType",
+        "params",
+        "allowBinary",
+        "allowStreamed",
+        "includeBuffer",
+        "render",
+        "request"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BatchOptions",
+      "kind": "interface",
+      "slug": "batch-options",
+      "category": "Options",
+      "properties": [
+        "concurrency",
+        "delay",
+        "randomOrder",
+        "progressBar",
+        "onProgress",
+        "sink"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BatchResult",
+      "kind": "interface",
+      "slug": "batch-result",
+      "category": "Results",
+      "properties": [
+        "url",
+        "data",
+        "error"
+      ],
+      "methods": []
+    },
+    {
+      "name": "PaginationConfig",
+      "kind": "interface",
+      "slug": "pagination-config",
+      "category": "Options",
+      "properties": [
+        "nextSelector",
+        "itemsSelector",
+        "maxPages",
+        "delayBetweenPages",
+        "stopOnDuplicate"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CrawlOptions",
+      "kind": "interface",
+      "slug": "crawl-options",
+      "category": "Options",
+      "properties": [
+        "seed",
+        "sink",
+        "schema",
+        "follow",
+        "maxUrls",
+        "concurrency",
+        "stateFile",
+        "saveEvery",
+        "linkOptions",
+        "respectRobotsTxt",
+        "userAgent"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CrawlJob",
+      "kind": "interface",
+      "slug": "crawl-job",
+      "category": "Interfaces",
+      "properties": [
+        "queue",
+        "start",
+        "resume",
+        "pause",
+        "on",
+        "results",
+        "stats"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SchemaInferenceField",
+      "kind": "interface",
+      "slug": "schema-inference-field",
+      "category": "Interfaces",
+      "properties": [
+        "selector",
+        "confidence",
+        "attr"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SchemaInferenceResult",
+      "kind": "interface",
+      "slug": "schema-inference-result",
+      "category": "Results",
+      "properties": [
+        "type",
+        "container",
+        "itemCount",
+        "schema",
+        "sample"
+      ],
+      "methods": []
+    },
+    {
+      "name": "FingerprintOptions",
+      "kind": "interface",
+      "slug": "fingerprint-options",
+      "category": "Options",
+      "properties": [
+        "userAgent",
+        "rotateUAOnEachRequest",
+        "randomizeHeaderOrder",
+        "randomizeTiming",
+        "profile",
+        "language"
+      ],
+      "methods": []
+    },
+    {
+      "name": "RetryOptions",
+      "kind": "interface",
+      "slug": "retry-options",
+      "category": "Options",
+      "properties": [
+        "max",
+        "jitter",
+        "retryOn",
+        "retryOnNetwork",
+        "retryOnTimeout",
+        "respectRetryAfter",
+        "maxRetryAfter",
+        "budgetMs",
+        "onRetry"
+      ],
+      "methods": []
+    },
+    {
+      "name": "HealthOptions",
+      "kind": "interface",
+      "slug": "health-options",
+      "category": "Options",
+      "properties": [
+        "alertThreshold",
+        "windowSize",
+        "onAlert"
+      ],
+      "methods": []
+    },
+    {
+      "name": "DiffOptions",
+      "kind": "interface",
+      "slug": "diff-options",
+      "category": "Options",
+      "properties": [
+        "storageDir",
+        "sensitivity",
+        "onDiff",
+        "maxHistory"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CacheOptions",
+      "kind": "interface",
+      "slug": "cache-options",
+      "category": "Options",
+      "properties": [
+        "ttl",
+        "storage",
+        "storageDir",
+        "maxItems",
+        "backend",
+        "file",
+        "table",
+        "staleWhileRevalidate",
+        "staleTtl"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CacheLookup",
+      "kind": "interface",
+      "slug": "cache-lookup",
+      "category": "Interfaces",
+      "properties": [
+        "data",
+        "stale",
+        "age"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CacheStats",
+      "kind": "interface",
+      "slug": "cache-stats",
+      "category": "Results",
+      "properties": [
+        "hits",
+        "misses",
+        "sets",
+        "evictions",
+        "stale",
+        "revalidations",
+        "size",
+        "revalidating",
+        "hitRate"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SingleFlightOptions",
+      "kind": "interface",
+      "slug": "single-flight-options",
+      "category": "Options",
+      "properties": [
+        "enabled",
+        "maxKeys"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SingleFlightStats",
+      "kind": "interface",
+      "slug": "single-flight-stats",
+      "category": "Results",
+      "properties": [
+        "flights",
+        "joins",
+        "bypassed",
+        "failures",
+        "inflight"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ScheduleInterval",
+      "kind": "interface",
+      "slug": "schedule-interval",
+      "category": "Scheduling",
+      "properties": [
+        "every",
+        "everyMs",
+        "ms"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ScheduleOnce",
+      "kind": "interface",
+      "slug": "schedule-once",
+      "category": "Scheduling",
+      "properties": [
+        "at"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Schedule",
+      "kind": "type",
+      "slug": "schedule",
+      "category": "Scheduling",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "JobRecord",
+      "kind": "interface",
+      "slug": "job-record",
+      "category": "Scheduling",
+      "properties": [
+        "id",
+        "name",
+        "schedule",
+        "enabled",
+        "data",
+        "nextRunAt",
+        "lastRunAt",
+        "lastStatus",
+        "lastError",
+        "lastDurationMs",
+        "runs",
+        "failures",
+        "missed",
+        "createdAt",
+        "updatedAt"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ScheduledJob",
+      "kind": "interface",
+      "slug": "scheduled-job",
+      "category": "Scheduling",
+      "properties": [
+        "id",
+        "schedule",
+        "name",
+        "enabled",
+        "data",
+        "nextRunAt",
+        "handler"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SchedulerOptions",
+      "kind": "interface",
+      "slug": "scheduler-options",
+      "category": "Scheduling",
+      "properties": [
+        "concurrency",
+        "catchUp",
+        "pollInterval",
+        "now",
+        "logger",
+        "jobs",
+        "store"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SchedulerRunEvent",
+      "kind": "interface",
+      "slug": "scheduler-run-event",
+      "category": "Scheduling",
+      "properties": [
+        "job",
+        "result"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SchedulerErrorEvent",
+      "kind": "interface",
+      "slug": "scheduler-error-event",
+      "category": "Scheduling",
+      "properties": [
+        "job",
+        "error"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SchedulerTickEvent",
+      "kind": "interface",
+      "slug": "scheduler-tick-event",
+      "category": "Scheduling",
+      "properties": [
+        "at",
+        "started"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SchedulerStats",
+      "kind": "interface",
+      "slug": "scheduler-stats",
+      "category": "Scheduling",
+      "properties": [
+        "ticks",
+        "runs",
+        "errors",
+        "skipped",
+        "jobs",
+        "enabled",
+        "running",
+        "started"
+      ],
+      "methods": []
+    },
+    {
+      "name": "JobStoreOptions",
+      "kind": "interface",
+      "slug": "job-store-options",
+      "category": "Scheduling",
+      "properties": [
+        "backend",
+        "storageDir",
+        "file",
+        "table",
+        "storage"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CronModule",
+      "kind": "interface",
+      "slug": "cron-module",
+      "category": "Scheduling",
+      "properties": [],
+      "methods": [
+        "parseCron",
+        "nextCronTime",
+        "parseDuration",
+        "formatDuration",
+        "nextRunTime",
+        "scheduleKind",
+        "scheduleLabel"
+      ]
+    },
+    {
+      "name": "StorageBackend",
+      "kind": "type",
+      "slug": "storage-backend",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "StorageOptions",
+      "kind": "interface",
+      "slug": "storage-options",
+      "category": "Options",
+      "properties": [
+        "storage",
+        "storageDir",
+        "file",
+        "table"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Storage",
+      "kind": "class",
+      "slug": "storage",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "set",
+        "get",
+        "delete",
+        "list",
+        "clear"
+      ]
+    },
+    {
+      "name": "MemoryStorage",
+      "kind": "class",
+      "slug": "memory-storage",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "set",
+        "get",
+        "delete",
+        "list",
+        "clear"
+      ]
+    },
+    {
+      "name": "SqliteStorage",
+      "kind": "class",
+      "slug": "sqlite-storage",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "set",
+        "get",
+        "delete",
+        "list",
+        "clear",
+        "close"
+      ]
+    },
+    {
+      "name": "createStorage",
+      "kind": "function",
+      "slug": "create-storage",
+      "category": "Functions",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "RateLimitOptions",
+      "kind": "interface",
+      "slug": "rate-limit-options",
+      "category": "Options",
+      "properties": [
+        "requestsPerSecond",
+        "concurrency"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SecurityOptions",
+      "kind": "interface",
+      "slug": "security-options",
+      "category": "Options",
+      "properties": [
+        "blockPrivateIPs",
+        "allowDomains",
+        "blockDomains",
+        "blockedPorts"
+      ],
+      "methods": []
+    },
+    {
+      "name": "RedirectPolicyOptions",
+      "kind": "interface",
+      "slug": "redirect-policy-options",
+      "category": "Options",
+      "properties": [
+        "validateEachHop",
+        "forwardSensitiveHeaders",
+        "maxCrossHostHops"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ComplianceOptions",
+      "kind": "interface",
+      "slug": "compliance-options",
+      "category": "Options",
+      "properties": [
+        "userAgent",
+        "respectXRobotsTag",
+        "maskFields",
+        "auditLog",
+        "purpose"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CircuitBreakerOptions",
+      "kind": "interface",
+      "slug": "circuit-breaker-options",
+      "category": "Options",
+      "properties": [
+        "threshold",
+        "cooldown",
+        "halfOpenMaxAttempts",
+        "onOpen",
+        "onClose"
+      ],
+      "methods": []
+    },
+    {
+      "name": "AuthOptions",
+      "kind": "interface",
+      "slug": "auth-options",
+      "category": "Options",
+      "properties": [
+        "type",
+        "token",
+        "refresh",
+        "refreshOn",
+        "headerName",
+        "onRefresh"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CsrfOptions",
+      "kind": "interface",
+      "slug": "csrf-options",
+      "category": "Options",
+      "properties": [
+        "auto",
+        "headerName",
+        "fieldName",
+        "cookieNames",
+        "metaSelectors",
+        "inputSelectors"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SessionPoolOptions",
+      "kind": "interface",
+      "slug": "session-pool-options",
+      "category": "Network capture",
+      "properties": [
+        "size",
+        "strategy",
+        "recycleAfter",
+        "fingerprint"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ObservabilityOptions",
+      "kind": "interface",
+      "slug": "observability-options",
+      "category": "Options",
+      "properties": [
+        "enabled",
+        "port"
+      ],
+      "methods": []
+    },
+    {
+      "name": "WebhookOptions",
+      "kind": "interface",
+      "slug": "webhook-options",
+      "category": "Options",
+      "properties": [
+        "onStart",
+        "onComplete",
+        "onError",
+        "onProgress",
+        "retries",
+        "backoffMs",
+        "timeout",
+        "secret",
+        "onDelivered"
+      ],
+      "methods": []
+    },
+    {
+      "name": "WebhookDeliveryResult",
+      "kind": "interface",
+      "slug": "webhook-delivery-result",
+      "category": "Results",
+      "properties": [
+        "event",
+        "url",
+        "delivered",
+        "status",
+        "attempts",
+        "error",
+        "skipped"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ValidationRule",
+      "kind": "interface",
+      "slug": "validation-rule",
+      "category": "Interfaces",
+      "properties": [
+        "required",
+        "type",
+        "pattern",
+        "minLength",
+        "maxLength",
+        "minItems",
+        "notEmpty",
+        "custom"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SengkrepOptions",
+      "kind": "interface",
+      "slug": "sengkrep-options",
+      "category": "Options",
+      "properties": [
+        "logLevel",
+        "logPretty",
+        "baseURL",
+        "timeout",
+        "maxRedirects",
+        "redirectPolicy",
+        "keepAlive",
+        "delay",
+        "delayMin",
+        "delayMax",
+        "maxMemoryBuffer",
+        "responseType",
+        "cookies",
+        "http2",
+        "fingerprint",
+        "retry",
+        "health",
+        "diff",
+        "cache",
+        "circuitBreaker",
+        "incremental",
+        "rateLimit",
+        "proxies",
+        "proxyStrategy",
+        "proxyMaxFailures",
+        "dns",
+        "sessionPool",
+        "security",
+        "auth",
+        "csrf",
+        "observability",
+        "webhook",
+        "har",
+        "validate",
+        "dedup",
+        "adaptive",
+        "dedupContent",
+        "compliance",
+        "renderer",
+        "render",
+        "singleFlight",
+        "scheduler",
+        "robotsTtl",
+        "tempFileTtl",
+        "connectTimeout",
+        "totalTimeout",
+        "storage"
+      ],
+      "methods": []
+    },
+    {
+      "name": "RenderOutput",
+      "kind": "type",
+      "slug": "render-output",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "RendererFn",
+      "kind": "type",
+      "slug": "renderer-fn",
+      "category": "Network capture",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "RendererInput",
+      "kind": "type",
+      "slug": "renderer-input",
+      "category": "Network capture",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "FetchError",
+      "kind": "class",
+      "slug": "fetch-error",
+      "category": "Errors",
+      "properties": [
+        "status",
+        "code",
+        "retryAfterMs",
+        "headers"
+      ],
+      "methods": []
+    },
+    {
+      "name": "TimeoutError",
+      "kind": "class",
+      "slug": "timeout-error",
+      "category": "Errors",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "CanceledError",
+      "kind": "class",
+      "slug": "canceled-error",
+      "category": "Errors",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "ProxyError",
+      "kind": "class",
+      "slug": "proxy-error",
+      "category": "Errors",
+      "properties": [
+        "code"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Http2Error",
+      "kind": "class",
+      "slug": "http2-error",
+      "category": "Errors",
+      "properties": [
+        "code",
+        "status",
+        "retryAfterMs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Retry",
+      "kind": "class",
+      "slug": "retry",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "run"
+      ]
+    },
+    {
+      "name": "Fetcher",
+      "kind": "class",
+      "slug": "fetcher",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "fetch",
+        "sweepStreamFiles",
+        "close"
+      ]
+    },
+    {
+      "name": "Http2Fetcher",
+      "kind": "class",
+      "slug": "http2-fetcher",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "fetch",
+        "closeAll"
+      ]
+    },
+    {
+      "name": "ExtractionError",
+      "kind": "class",
+      "slug": "extraction-error",
+      "category": "Errors",
+      "properties": [
+        "field",
+        "selector"
+      ],
+      "methods": []
+    },
+    {
+      "name": "JsonExtractionError",
+      "kind": "class",
+      "slug": "json-extraction-error",
+      "category": "Errors",
+      "properties": [
+        "field",
+        "path"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ValidationError",
+      "kind": "class",
+      "slug": "validation-error",
+      "category": "Errors",
+      "properties": [
+        "errors"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SecurityError",
+      "kind": "class",
+      "slug": "security-error",
+      "category": "Errors",
+      "properties": [
+        "code"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CircuitOpenError",
+      "kind": "class",
+      "slug": "circuit-open-error",
+      "category": "Errors",
+      "properties": [
+        "code",
+        "key",
+        "retryAt"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BrowserProfile",
+      "kind": "interface",
+      "slug": "browser-profile",
+      "category": "Interfaces",
+      "properties": [
+        "id",
+        "browser",
+        "platform",
+        "platformVersion",
+        "ua"
+      ],
+      "methods": []
+    },
+    {
+      "name": "FingerprintContext",
+      "kind": "interface",
+      "slug": "fingerprint-context",
+      "category": "Interfaces",
+      "properties": [
+        "referer",
+        "targetUrl",
+        "method"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Fingerprint",
+      "kind": "class",
+      "slug": "fingerprint",
+      "category": "Classes",
+      "properties": [
+        "profile",
+        "PROFILES",
+        "ACCEPT_ENCODING",
+        "ZSTD_SUPPORTED"
+      ],
+      "methods": [
+        "setProfile",
+        "buildHeaders",
+        "getUA",
+        "delay",
+        "humanDelay"
+      ]
+    },
+    {
+      "name": "HealthMonitor",
+      "kind": "class",
+      "slug": "health-monitor",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "record",
+        "getReport",
+        "getAllReports",
+        "reset"
+      ]
+    },
+    {
+      "name": "DiffDetector",
+      "kind": "class",
+      "slug": "diff-detector",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "check",
+        "getAllChanges",
+        "getChangedOnly",
+        "clearHistory",
+        "clearSnapshot",
+        "clearAll"
+      ]
+    },
+    {
+      "name": "SchemaValidator",
+      "kind": "class",
+      "slug": "schema-validator",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "validate",
+        "validateMany"
+      ]
+    },
+    {
+      "name": "SingleFlight",
+      "kind": "class",
+      "slug": "single-flight",
+      "category": "Classes",
+      "properties": [
+        "enabled",
+        "maxKeys",
+        "size"
+      ],
+      "methods": [
+        "key",
+        "run",
+        "stats",
+        "clear"
+      ]
+    },
+    {
+      "name": "JobStore",
+      "kind": "class",
+      "slug": "job-store",
+      "category": "Scheduling",
+      "properties": [
+        "storage"
+      ],
+      "methods": [
+        "key",
+        "save",
+        "get",
+        "has",
+        "list",
+        "all",
+        "delete",
+        "clear"
+      ]
+    },
+    {
+      "name": "Scheduler",
+      "kind": "class",
+      "slug": "scheduler",
+      "category": "Scheduling",
+      "properties": [
+        "logger",
+        "now",
+        "concurrency",
+        "catchUp",
+        "pollInterval",
+        "store",
+        "started"
+      ],
+      "methods": [
+        "add",
+        "remove",
+        "get",
+        "list",
+        "has",
+        "pause",
+        "resume",
+        "start",
+        "tick",
+        "runNow",
+        "stop",
+        "stats",
+        "on",
+        "on",
+        "on",
+        "on",
+        "on",
+        "once",
+        "once",
+        "once",
+        "once",
+        "once",
+        "off",
+        "emit"
+      ]
+    },
+    {
+      "name": "Cache",
+      "kind": "class",
+      "slug": "cache",
+      "category": "Classes",
+      "properties": [
+        "ttl",
+        "staleTtl",
+        "staleWhileRevalidate"
+      ],
+      "methods": [
+        "get",
+        "lookup",
+        "set",
+        "beginRevalidate",
+        "endRevalidate",
+        "isRevalidating",
+        "has",
+        "delete",
+        "clear",
+        "stats"
+      ]
+    },
+    {
+      "name": "CookieJar",
+      "kind": "class",
+      "slug": "cookie-jar",
+      "category": "Network capture",
+      "properties": [],
+      "methods": [
+        "getCookieHeader",
+        "getAll",
+        "setManual",
+        "export",
+        "import",
+        "clear"
+      ]
+    },
+    {
+      "name": "RateLimiter",
+      "kind": "class",
+      "slug": "rate-limiter",
+      "category": "Classes",
+      "properties": [
+        "enabled"
+      ],
+      "methods": [
+        "acquire",
+        "reset"
+      ]
+    },
+    {
+      "name": "AdaptiveThrottleOptions",
+      "kind": "interface",
+      "slug": "adaptive-throttle-options",
+      "category": "Options",
+      "properties": [
+        "enabled",
+        "minConcurrency",
+        "maxConcurrency",
+        "initialConcurrency",
+        "increaseEvery",
+        "backoffFactor",
+        "baseDelay",
+        "maxDelay"
+      ],
+      "methods": []
+    },
+    {
+      "name": "AdaptiveThrottle",
+      "kind": "class",
+      "slug": "adaptive-throttle",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "acquire",
+        "onSuccess",
+        "onFailure",
+        "concurrencyFor",
+        "delayFor",
+        "stats",
+        "reset"
+      ]
+    },
+    {
+      "name": "ContentDedupOptions",
+      "kind": "interface",
+      "slug": "content-dedup-options",
+      "category": "Options",
+      "properties": [
+        "threshold",
+        "shingleSize",
+        "maxEntries"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ContentDedup",
+      "kind": "class",
+      "slug": "content-dedup",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "fingerprint",
+        "add",
+        "find",
+        "isDuplicate",
+        "check",
+        "size",
+        "clear",
+        "simhash",
+        "hammingDistance",
+        "tokenize"
+      ]
+    },
+    {
+      "name": "ProxyRotator",
+      "kind": "class",
+      "slug": "proxy-rotator",
+      "category": "Classes",
+      "properties": [
+        "enabled"
+      ],
+      "methods": [
+        "next",
+        "reportSuccess",
+        "reportFailure",
+        "stats"
+      ]
+    },
+    {
+      "name": "Interceptors",
+      "kind": "class",
+      "slug": "interceptors",
+      "category": "Classes",
+      "properties": [
+        "request",
+        "response"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Webhook",
+      "kind": "class",
+      "slug": "webhook",
+      "category": "Classes",
+      "properties": [
+        "results"
+      ],
+      "methods": [
+        "sign",
+        "fire"
+      ]
+    },
+    {
+      "name": "Discover",
+      "kind": "class",
+      "slug": "discover",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "run",
+        "isAllowed",
+        "getCrawlDelay",
+        "clearRobotsCache"
+      ]
+    },
+    {
+      "name": "UrlDeduplicator",
+      "kind": "class",
+      "slug": "url-deduplicator",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "isDuplicate",
+        "markSeen",
+        "filterNew",
+        "size",
+        "clear"
+      ]
+    },
+    {
+      "name": "SecurityGuard",
+      "kind": "class",
+      "slug": "security-guard",
+      "category": "Classes",
+      "properties": [
+        "enabled"
+      ],
+      "methods": [
+        "resolve",
+        "checkAddress",
+        "resolveForRequest",
+        "check"
+      ]
+    },
+    {
+      "name": "CircuitBreaker",
+      "kind": "class",
+      "slug": "circuit-breaker",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "canRequest",
+        "assertCanRequest",
+        "recordSuccess",
+        "recordFailure",
+        "getState",
+        "getAllStates",
+        "reset"
+      ]
+    },
+    {
+      "name": "Incremental",
+      "kind": "class",
+      "slug": "incremental",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "getConditionalHeaders",
+        "hasSnapshot",
+        "getSnapshot",
+        "record",
+        "clear"
+      ]
+    },
+    {
+      "name": "CsrfHandler",
+      "kind": "class",
+      "slug": "csrf-handler",
+      "category": "Classes",
+      "properties": [
+        "enabled"
+      ],
+      "methods": [
+        "extractFromHtml",
+        "extractFromCookies",
+        "buildFormBody",
+        "buildHeaders"
+      ]
+    },
+    {
+      "name": "AuthManager",
+      "kind": "class",
+      "slug": "auth-manager",
+      "category": "Classes",
+      "properties": [
+        "enabled",
+        "token"
+      ],
+      "methods": [
+        "buildHeaders",
+        "shouldRefresh",
+        "refresh"
+      ]
+    },
+    {
+      "name": "SessionPoolSession",
+      "kind": "interface",
+      "slug": "session-pool-session",
+      "category": "Network capture",
+      "properties": [
+        "id",
+        "cookieJar",
+        "fingerprint",
+        "useCount",
+        "createdAt"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SessionPool",
+      "kind": "class",
+      "slug": "session-pool",
+      "category": "Network capture",
+      "properties": [],
+      "methods": [
+        "next",
+        "get",
+        "stats",
+        "resetAll"
+      ]
+    },
+    {
+      "name": "PluginHooks",
+      "kind": "interface",
+      "slug": "plugin-hooks",
+      "category": "Interfaces",
+      "properties": [
+        "beforeRequest",
+        "afterExtract",
+        "onError"
+      ],
+      "methods": []
+    },
+    {
+      "name": "PluginSystem",
+      "kind": "class",
+      "slug": "plugin-system",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "use",
+        "hook",
+        "run"
+      ]
+    },
+    {
+      "name": "CrawlQueue",
+      "kind": "class",
+      "slug": "crawl-queue",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "start",
+        "resume",
+        "pause",
+        "on",
+        "results",
+        "stats"
+      ]
+    },
+    {
+      "name": "ObservabilityReport",
+      "kind": "interface",
+      "slug": "observability-report",
+      "category": "Results",
+      "properties": [
+        "total",
+        "success",
+        "failed",
+        "successRate",
+        "rps",
+        "elapsedSec",
+        "domains",
+        "categories",
+        "bytes",
+        "topErrors"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Observability",
+      "kind": "class",
+      "slug": "observability",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "recordSuccess",
+        "recordFailure",
+        "trackBytes",
+        "report",
+        "prometheus",
+        "close"
+      ]
+    },
+    {
+      "name": "HarRecorder",
+      "kind": "class",
+      "slug": "har-recorder",
+      "category": "Network capture",
+      "properties": [],
+      "methods": [
+        "attach",
+        "toHAR",
+        "save",
+        "clear"
+      ]
+    },
+    {
+      "name": "WordPress",
+      "kind": "class",
+      "slug": "word-press",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "detect",
+        "restApi",
+        "restApiAll",
+        "extractNonce",
+        "ajaxAction"
+      ]
+    },
+    {
+      "name": "GraphQLClient",
+      "kind": "class",
+      "slug": "graph-qlclient",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "introspect",
+        "query",
+        "flattenConnection",
+        "queryAllPages"
+      ]
+    },
+    {
+      "name": "DnsCache",
+      "kind": "class",
+      "slug": "dns-cache",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "lookup",
+        "invalidate",
+        "stats"
+      ]
+    },
+    {
+      "name": "ParsedForm",
+      "kind": "interface",
+      "slug": "parsed-form",
+      "category": "Interfaces",
+      "properties": [
+        "action",
+        "method",
+        "fields"
+      ],
+      "methods": []
+    },
+    {
+      "name": "FormHandler",
+      "kind": "class",
+      "slug": "form-handler",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "parse",
+        "buildSubmission"
+      ]
+    },
+    {
+      "name": "ProgressBar",
+      "kind": "class",
+      "slug": "progress-bar",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "update",
+        "increment",
+        "finish"
+      ]
+    },
+    {
+      "name": "StreamWriter",
+      "kind": "class",
+      "slug": "stream-writer",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "write",
+        "writeMany",
+        "count",
+        "close"
+      ]
+    },
+    {
+      "name": "SinkKey",
+      "kind": "type",
+      "slug": "sink-key",
+      "category": "Data sinks",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "SinkOptions",
+      "kind": "interface",
+      "slug": "sink-options",
+      "category": "Data sinks",
+      "properties": [
+        "key",
+        "replace",
+        "batchSize",
+        "flushInterval",
+        "retries",
+        "retryDelayMs",
+        "transform",
+        "onError"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SinkStats",
+      "kind": "interface",
+      "slug": "sink-stats",
+      "category": "Data sinks",
+      "properties": [
+        "written",
+        "batches",
+        "failed",
+        "retried",
+        "duplicates",
+        "buffered",
+        "closed"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Sink",
+      "kind": "class",
+      "slug": "sink",
+      "category": "Data sinks",
+      "properties": [
+        "key",
+        "keys",
+        "replace",
+        "batchSize",
+        "flushInterval",
+        "retries",
+        "retryDelayMs",
+        "size"
+      ],
+      "methods": [
+        "keyOf",
+        "write",
+        "upsert",
+        "flush",
+        "close",
+        "stats"
+      ]
+    },
+    {
+      "name": "MemorySink",
+      "kind": "class",
+      "slug": "memory-sink",
+      "category": "Data sinks",
+      "properties": [
+        "rows",
+        "length"
+      ],
+      "methods": [
+        "clear"
+      ]
+    },
+    {
+      "name": "FileSinkFormat",
+      "kind": "type",
+      "slug": "file-sink-format",
+      "category": "Data sinks",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "FileSinkOptions",
+      "kind": "interface",
+      "slug": "file-sink-options",
+      "category": "Data sinks",
+      "properties": [
+        "format",
+        "columns"
+      ],
+      "methods": []
+    },
+    {
+      "name": "FileSink",
+      "kind": "class",
+      "slug": "file-sink",
+      "category": "Data sinks",
+      "properties": [
+        "filePath",
+        "format",
+        "columns",
+        "rows",
+        "appendOnly"
+      ],
+      "methods": [
+        "count"
+      ]
+    },
+    {
+      "name": "SqlSinkOptions",
+      "kind": "interface",
+      "slug": "sql-sink-options",
+      "category": "Data sinks",
+      "properties": [
+        "table",
+        "client",
+        "pool",
+        "columns",
+        "connection",
+        "conflictTarget",
+        "dialect"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SqlStatement",
+      "kind": "interface",
+      "slug": "sql-statement",
+      "category": "Interfaces",
+      "properties": [
+        "text",
+        "values",
+        "columns"
+      ],
+      "methods": []
+    },
+    {
+      "name": "SqlSink",
+      "kind": "class",
+      "slug": "sql-sink",
+      "category": "Data sinks",
+      "properties": [
+        "dialect",
+        "table",
+        "client",
+        "columns"
+      ],
+      "methods": [
+        "buildStatement",
+        "upsertClause",
+        "query"
+      ]
+    },
+    {
+      "name": "PostgresSinkOptions",
+      "kind": "interface",
+      "slug": "postgres-sink-options",
+      "category": "Data sinks",
+      "properties": [
+        "driver"
+      ],
+      "methods": []
+    },
+    {
+      "name": "PostgresSink",
+      "kind": "class",
+      "slug": "postgres-sink",
+      "category": "Data sinks",
+      "properties": [
+        "driver"
+      ],
+      "methods": []
+    },
+    {
+      "name": "MySQLSinkOptions",
+      "kind": "interface",
+      "slug": "my-sqlsink-options",
+      "category": "Data sinks",
+      "properties": [
+        "driver"
+      ],
+      "methods": []
+    },
+    {
+      "name": "MySQLSink",
+      "kind": "class",
+      "slug": "my-sqlsink",
+      "category": "Data sinks",
+      "properties": [
+        "driver"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ClickHouseSinkOptions",
+      "kind": "interface",
+      "slug": "click-house-sink-options",
+      "category": "Data sinks",
+      "properties": [
+        "table",
+        "client",
+        "columns",
+        "connection",
+        "driver"
+      ],
+      "methods": []
+    },
+    {
+      "name": "ClickHouseSink",
+      "kind": "class",
+      "slug": "click-house-sink",
+      "category": "Data sinks",
+      "properties": [
+        "table",
+        "driver"
+      ],
+      "methods": []
+    },
+    {
+      "name": "S3SinkFormat",
+      "kind": "type",
+      "slug": "s3-sink-format",
+      "category": "Data sinks",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "S3PutRequest",
+      "kind": "interface",
+      "slug": "s3-put-request",
+      "category": "Interfaces",
+      "properties": [
+        "key",
+        "body",
+        "contentType",
+        "bucket",
+        "format"
+      ],
+      "methods": []
+    },
+    {
+      "name": "S3SinkOptions",
+      "kind": "interface",
+      "slug": "s3-sink-options",
+      "category": "Data sinks",
+      "properties": [
+        "bucket",
+        "format",
+        "prefix",
+        "client",
+        "connection",
+        "driver",
+        "put"
+      ],
+      "methods": []
+    },
+    {
+      "name": "S3Sink",
+      "kind": "class",
+      "slug": "s3-sink",
+      "category": "Data sinks",
+      "properties": [
+        "bucket",
+        "format",
+        "prefix",
+        "client",
+        "extension"
+      ],
+      "methods": [
+        "objectKeyFor",
+        "batchKey",
+        "serializeBatch",
+        "putObject"
+      ]
+    },
+    {
+      "name": "SinkDescriptor",
+      "kind": "type",
+      "slug": "sink-descriptor",
+      "category": "Data sinks",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "SinkInput",
+      "kind": "type",
+      "slug": "sink-input",
+      "category": "Data sinks",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "createSink",
+      "kind": "function",
+      "slug": "create-sink",
+      "category": "Data sinks",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "DistributedAdapter",
+      "kind": "interface",
+      "slug": "distributed-adapter",
+      "category": "Interfaces",
+      "properties": [],
+      "methods": [
+        "enqueue",
+        "dequeue",
+        "complete",
+        "release",
+        "size"
+      ]
+    },
+    {
+      "name": "MemoryAdapter",
+      "kind": "class",
+      "slug": "memory-adapter",
+      "category": "Classes",
+      "properties": [],
+      "methods": [
+        "enqueue",
+        "dequeue",
+        "complete",
+        "release",
+        "size"
+      ]
+    },
+    {
+      "name": "DistributedQueueResult",
+      "kind": "interface",
+      "slug": "distributed-queue-result",
+      "category": "Results",
+      "properties": [
+        "item",
+        "result",
+        "error",
+        "droppedAfterRetries"
+      ],
+      "methods": []
+    },
+    {
+      "name": "DistributedQueue",
+      "kind": "class",
+      "slug": "distributed-queue",
+      "category": "Classes",
+      "properties": [
+        "deadLetter"
+      ],
+      "methods": [
+        "enqueue",
+        "run",
+        "deadLettered",
+        "size"
+      ]
+    },
+    {
+      "name": "Transport",
+      "kind": "class",
+      "slug": "transport",
+      "category": "Classes",
+      "properties": [
+        "supportsHttp2"
+      ],
+      "methods": [
+        "request",
+        "sweepStreamFiles",
+        "close"
+      ]
+    },
+    {
+      "name": "CaptureHeaders",
+      "kind": "interface",
+      "slug": "capture-headers",
+      "category": "Network capture",
+      "properties": [
+        "name"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureEntryInit",
+      "kind": "interface",
+      "slug": "capture-entry-init",
+      "category": "Network capture",
+      "properties": [
+        "id",
+        "source",
+        "method",
+        "url",
+        "status",
+        "statusText",
+        "httpVersion",
+        "resourceType",
+        "mimeType",
+        "requestHeaders",
+        "responseHeaders",
+        "requestBody",
+        "responseBody",
+        "requestSize",
+        "responseSize",
+        "startedDateTime",
+        "time",
+        "initiator",
+        "fromCache",
+        "failed",
+        "errorText",
+        "redirectURL",
+        "bodyBase64"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureEntry",
+      "kind": "interface",
+      "slug": "capture-entry",
+      "category": "Network capture",
+      "properties": [
+        "id",
+        "source",
+        "method",
+        "url",
+        "status",
+        "statusText",
+        "httpVersion",
+        "resourceType",
+        "mimeType",
+        "requestHeaders",
+        "responseHeaders",
+        "requestBody",
+        "responseBody",
+        "requestSize",
+        "responseSize",
+        "startedDateTime",
+        "time",
+        "initiator",
+        "fromCache",
+        "failed",
+        "errorText",
+        "redirectURL",
+        "bodyBase64",
+        "done",
+        "truncated",
+        "frames",
+        "framesTruncated"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureWebSocketFrameRecord",
+      "kind": "interface",
+      "slug": "capture-web-socket-frame-record",
+      "category": "Network capture",
+      "properties": [
+        "direction",
+        "opcode",
+        "payloadData",
+        "size",
+        "timestamp"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureJsonSchema",
+      "kind": "interface",
+      "slug": "capture-json-schema",
+      "category": "Network capture",
+      "properties": [
+        "type",
+        "properties",
+        "required",
+        "items"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureEndpoint",
+      "kind": "interface",
+      "slug": "capture-endpoint",
+      "category": "Network capture",
+      "properties": [
+        "method",
+        "template",
+        "path",
+        "host",
+        "api",
+        "count",
+        "statuses",
+        "params",
+        "mimeTypes",
+        "sources",
+        "resourceTypes",
+        "averageTime",
+        "sampleIds",
+        "schema",
+        "sample"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureSummary",
+      "kind": "interface",
+      "slug": "capture-summary",
+      "category": "Network capture",
+      "properties": [
+        "total",
+        "byResourceType",
+        "byStatus",
+        "bySource",
+        "failed",
+        "truncated"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureFilter",
+      "kind": "interface",
+      "slug": "capture-filter",
+      "category": "Network capture",
+      "properties": [
+        "method",
+        "type",
+        "status",
+        "host",
+        "url",
+        "body",
+        "since",
+        "api",
+        "failed"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureEndpointOptions",
+      "kind": "interface",
+      "slug": "capture-endpoint-options",
+      "category": "Network capture",
+      "properties": [
+        "all",
+        "schema",
+        "bodies",
+        "maxSample"
+      ],
+      "methods": []
+    },
+    {
+      "name": "HarLog",
+      "kind": "interface",
+      "slug": "har-log",
+      "category": "Network capture",
+      "properties": [
+        "log"
+      ],
+      "methods": []
+    },
+    {
+      "name": "NetworkCapture",
+      "kind": "class",
+      "slug": "network-capture",
+      "category": "Network capture",
+      "properties": [
+        "source",
+        "entries",
+        "meta",
+        "size"
+      ],
+      "methods": [
+        "fromHar",
+        "fromCdp",
+        "fromProxy",
+        "fromPlaywright",
+        "run",
+        "add",
+        "pull",
+        "filter",
+        "api",
+        "find",
+        "summary",
+        "endpoints",
+        "schemas",
+        "toHAR",
+        "saveHar",
+        "toFetchCode",
+        "toCurl",
+        "toSchema",
+        "toScript",
+        "frames",
+        "json",
+        "toJSON",
+        "clear"
+      ]
+    },
+    {
+      "name": "CaptureSchemaOptions",
+      "kind": "interface",
+      "slug": "capture-schema-options",
+      "category": "Network capture",
+      "properties": [
+        "maxDepth"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureScriptOptions",
+      "kind": "interface",
+      "slug": "capture-script-options",
+      "category": "Network capture",
+      "properties": [
+        "schemaObject",
+        "require",
+        "logLevel",
+        "url",
+        "params",
+        "headers",
+        "body",
+        "redact"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CdpClient",
+      "kind": "interface",
+      "slug": "cdp-client",
+      "category": "Network capture",
+      "properties": [],
+      "methods": [
+        "on",
+        "send",
+        "close"
+      ]
+    },
+    {
+      "name": "CdpCaptureOptions",
+      "kind": "interface",
+      "slug": "cdp-capture-options",
+      "category": "Network capture",
+      "properties": [
+        "url",
+        "host",
+        "debuggerUrl",
+        "timeout",
+        "idleMs",
+        "maxEntries",
+        "maxBodyBytes",
+        "bodies",
+        "readAllBodies",
+        "frames",
+        "maxFramesPerSocket",
+        "connect",
+        "discover"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CdpCaptureResult",
+      "kind": "interface",
+      "slug": "cdp-capture-result",
+      "category": "Network capture",
+      "properties": [
+        "entries",
+        "url",
+        "title",
+        "session"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CdpTargetDescription",
+      "kind": "interface",
+      "slug": "cdp-target-description",
+      "category": "Network capture",
+      "properties": [
+        "id",
+        "type",
+        "title",
+        "url",
+        "webSocketDebuggerUrl"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CdpSession",
+      "kind": "class",
+      "slug": "cdp-session",
+      "category": "Network capture",
+      "properties": [
+        "closed"
+      ],
+      "methods": [
+        "on",
+        "once",
+        "send",
+        "close"
+      ]
+    },
+    {
+      "name": "CdpCapture",
+      "kind": "class",
+      "slug": "cdp-capture",
+      "category": "Network capture",
+      "properties": [
+        "host",
+        "timeout"
+      ],
+      "methods": [
+        "version",
+        "targets",
+        "discover",
+        "captureUrl",
+        "exportCookies",
+        "open",
+        "exportCookies",
+        "capture",
+        "fetchBodies"
+      ]
+    },
+    {
+      "name": "CdpRendererOptions",
+      "kind": "interface",
+      "slug": "cdp-renderer-options",
+      "category": "Network capture",
+      "properties": [
+        "capture",
+        "idleMs",
+        "waitForSelector",
+        "waitForSelectorTimeout",
+        "waitForSelectorInterval",
+        "expression",
+        "includeMeta",
+        "consoleMsgs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CdpRenderResult",
+      "kind": "interface",
+      "slug": "cdp-render-result",
+      "category": "Network capture",
+      "properties": [
+        "html",
+        "url",
+        "title",
+        "readyState",
+        "consoleMsgs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CdpRenderer",
+      "kind": "class",
+      "slug": "cdp-renderer",
+      "category": "Network capture",
+      "properties": [
+        "capture"
+      ],
+      "methods": [
+        "render"
+      ]
+    },
+    {
+      "name": "createCdpRenderer",
+      "kind": "function",
+      "slug": "create-cdp-renderer",
+      "category": "Network capture",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "CaptureCookie",
+      "kind": "interface",
+      "slug": "capture-cookie",
+      "category": "Network capture",
+      "properties": [
+        "name",
+        "value",
+        "domain",
+        "path",
+        "secure",
+        "httpOnly",
+        "expires"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CookieImportOptions",
+      "kind": "interface",
+      "slug": "cookie-import-options",
+      "category": "Network capture",
+      "properties": [
+        "from",
+        "path",
+        "text",
+        "value",
+        "cookies",
+        "url",
+        "domain",
+        "domains"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureCookies",
+      "kind": "interface",
+      "slug": "capture-cookies",
+      "category": "Network capture",
+      "properties": [
+        "HTTP_ONLY_PREFIX"
+      ],
+      "methods": [
+        "parseCookieFile",
+        "parseCookieJson",
+        "parseSetCookieLine",
+        "toExpiry",
+        "domainOf",
+        "readCookies",
+        "importCookies"
+      ]
+    },
+    {
+      "name": "CaptureCodegen",
+      "kind": "interface",
+      "slug": "capture-codegen",
+      "category": "Network capture",
+      "properties": [],
+      "methods": [
+        "jsonPathsFromSchema",
+        "buildScript",
+        "collectPaths",
+        "keyForPath",
+        "uniqueKey",
+        "queryParamsOf",
+        "stripQuery"
+      ]
+    },
+    {
+      "name": "CaptureProxyOptions",
+      "kind": "interface",
+      "slug": "capture-proxy-options",
+      "category": "Network capture",
+      "properties": [
+        "host",
+        "port",
+        "maxBodyBytes",
+        "captureTunnels",
+        "onEntry"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureProxyAddress",
+      "kind": "interface",
+      "slug": "capture-proxy-address",
+      "category": "Network capture",
+      "properties": [
+        "host",
+        "port",
+        "url"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureProxy",
+      "kind": "class",
+      "slug": "capture-proxy",
+      "category": "Network capture",
+      "properties": [
+        "entries",
+        "address",
+        "server",
+        "requestCount",
+        "tunnelCount"
+      ],
+      "methods": [
+        "start",
+        "stop",
+        "captured"
+      ]
+    },
+    {
+      "name": "PlaywrightCaptureOptions",
+      "kind": "interface",
+      "slug": "playwright-capture-options",
+      "category": "Network capture",
+      "properties": [
+        "module",
+        "moduleName",
+        "bodies",
+        "headless",
+        "args",
+        "context",
+        "waitUntil",
+        "timeout",
+        "html",
+        "browserType"
+      ],
+      "methods": []
+    },
+    {
+      "name": "PlaywrightAttachment",
+      "kind": "interface",
+      "slug": "playwright-attachment",
+      "category": "Network capture",
+      "properties": [
+        "entries"
+      ],
+      "methods": [
+        "stop"
+      ]
+    },
+    {
+      "name": "PlaywrightCapture",
+      "kind": "class",
+      "slug": "playwright-capture",
+      "category": "Network capture",
+      "properties": [],
+      "methods": [
+        "resolve",
+        "attach",
+        "capture"
+      ]
+    },
+    {
+      "name": "PaginationNext",
+      "kind": "interface",
+      "slug": "pagination-next",
+      "category": "Interfaces",
+      "properties": [
+        "selector",
+        "url",
+        "method",
+        "currentPage"
+      ],
+      "methods": []
+    },
+    {
+      "name": "PaginationDetectorModule",
+      "kind": "interface",
+      "slug": "pagination-detector-module",
+      "category": "Interfaces",
+      "properties": [],
+      "methods": [
+        "detectNextLink",
+        "detectFromUrlPattern",
+        "detectTotalPages"
+      ]
+    },
+    {
+      "name": "CaptureAnalyzeOptions",
+      "kind": "interface",
+      "slug": "capture-analyze-options",
+      "category": "Network capture",
+      "properties": [
+        "includeStatic",
+        "includeBodies",
+        "maxSample",
+        "schema"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureAnalyze",
+      "kind": "interface",
+      "slug": "capture-analyze",
+      "category": "Network capture",
+      "properties": [],
+      "methods": [
+        "groupEndpoints",
+        "inferJsonSchema",
+        "mergeSchemas",
+        "queryParams",
+        "safeHeaders",
+        "schemaFromSamples",
+        "summarize",
+        "toCurl",
+        "toFetchCode",
+        "truncate",
+        "urlTemplate"
+      ]
+    },
+    {
+      "name": "CaptureEntryClassifyInput",
+      "kind": "interface",
+      "slug": "capture-entry-classify-input",
+      "category": "Network capture",
+      "properties": [
+        "resourceType",
+        "mimeType",
+        "url"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureEntryModule",
+      "kind": "interface",
+      "slug": "capture-entry-module",
+      "category": "Network capture",
+      "properties": [
+        "API_RESOURCE_TYPES",
+        "DEFAULT_REDACT_HEADERS",
+        "HOP_BY_HOP"
+      ],
+      "methods": [
+        "bodyToText",
+        "byteLength",
+        "classifyResourceType",
+        "createEntry",
+        "entryKind",
+        "headerMap",
+        "headersToHar",
+        "isApiEntry",
+        "isJsonMime",
+        "isTextMime",
+        "nextId",
+        "parseJsonBody",
+        "parseUrl",
+        "redactHeaders"
+      ]
+    },
+    {
+      "name": "CaptureWebSocketFrame",
+      "kind": "interface",
+      "slug": "capture-web-socket-frame",
+      "category": "Network capture",
+      "properties": [
+        "opcode",
+        "payload",
+        "fin"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureDecodeResult",
+      "kind": "interface",
+      "slug": "capture-decode-result",
+      "category": "Network capture",
+      "properties": [
+        "frames",
+        "rest"
+      ],
+      "methods": []
+    },
+    {
+      "name": "CaptureWebSocketClient",
+      "kind": "interface",
+      "slug": "capture-web-socket-client",
+      "category": "Network capture",
+      "properties": [
+        "socket",
+        "maxPayload"
+      ],
+      "methods": [
+        "send",
+        "close",
+        "on",
+        "off"
+      ]
+    },
+    {
+      "name": "CaptureWs",
+      "kind": "interface",
+      "slug": "capture-ws",
+      "category": "Network capture",
+      "properties": [
+        "GUID",
+        "OPCODES",
+        "WebSocketClient"
+      ],
+      "methods": [
+        "acceptKey",
+        "connect",
+        "decodeFrames",
+        "encodeFrame"
+      ]
+    },
+    {
+      "name": "Sengkrep",
+      "kind": "class",
+      "slug": "sengkrep",
+      "category": "Classes",
+      "properties": [
+        "fingerprint",
+        "cookieJar",
+        "interceptors",
+        "plugins",
+        "pluginSystem",
+        "cache",
+        "rateLimiter",
+        "proxyRotator",
+        "security",
+        "securityGuard",
+        "circuitBreaker",
+        "incremental",
+        "csrf",
+        "csrfHandler",
+        "auth",
+        "authManager",
+        "sessionPool",
+        "observability",
+        "dnsCache",
+        "formHandler",
+        "deduplicator",
+        "health",
+        "healthMonitor",
+        "diff",
+        "diffDetector",
+        "validator",
+        "wordpress",
+        "graphql",
+        "transport",
+        "singleFlight",
+        "scheduler",
+        "adaptive",
+        "contentDedup",
+        "compliance",
+        "renderer",
+        "renderEnabled"
+      ],
+      "methods": [
+        "fetch",
+        "load",
+        "extract",
+        "batch",
+        "stream",
+        "paginate",
+        "crawl",
+        "login",
+        "submitForm",
+        "discover",
+        "isAllowed",
+        "getCrawlDelay",
+        "export",
+        "inferSchema",
+        "distributedQueue",
+        "extractJsonLd",
+        "extractMicrodata",
+        "extractDataAttributes",
+        "extractScripts",
+        "getObservabilityReport",
+        "saveHar",
+        "flush",
+        "close"
+      ]
+    },
+    {
+      "name": "SengkrepStatic",
+      "kind": "interface",
+      "slug": "sengkrep-static",
+      "category": "Interfaces",
+      "properties": [
+        "Sengkrep",
+        "Fingerprint",
+        "HealthMonitor",
+        "DiffDetector",
+        "SchemaValidator",
+        "Cache",
+        "CookieJar",
+        "RateLimiter",
+        "ProxyRotator",
+        "Interceptors",
+        "Webhook",
+        "Discover",
+        "SecurityGuard",
+        "CircuitBreaker",
+        "Incremental",
+        "CsrfHandler",
+        "AuthManager",
+        "SessionPool",
+        "PluginSystem",
+        "CrawlQueue",
+        "Observability",
+        "HarRecorder",
+        "NetworkCapture",
+        "CdpCapture",
+        "CaptureProxy",
+        "PlaywrightCapture",
+        "HarImporter",
+        "CdpRenderer",
+        "renderers",
+        "capture",
+        "WordPress",
+        "GraphQLClient",
+        "DnsCache",
+        "FormHandler",
+        "ProgressBar",
+        "PaginationDetector",
+        "DistributedQueue",
+        "MemoryAdapter",
+        "StreamWriter",
+        "Sink",
+        "MemorySink",
+        "FileSink",
+        "SqlSink",
+        "PostgresSink",
+        "MySQLSink",
+        "ClickHouseSink",
+        "S3Sink",
+        "sinks",
+        "createSink",
+        "UrlDeduplicator",
+        "Retry",
+        "Fetcher",
+        "Http2Fetcher",
+        "Transport",
+        "AdaptiveThrottle",
+        "SingleFlight",
+        "Scheduler",
+        "JobStore",
+        "cron",
+        "ContentDedup",
+        "SqliteStorage",
+        "Storage",
+        "MemoryStorage",
+        "createStorage",
+        "cheerio",
+        "plugins",
+        "contentSafety",
+        "errors"
+      ],
+      "methods": [
+        "create",
+        "fetch",
+        "load",
+        "extract",
+        "batch",
+        "stream",
+        "paginate",
+        "login",
+        "discover",
+        "isAllowed",
+        "getCrawlDelay",
+        "export",
+        "crawl",
+        "submitForm",
+        "inferSchema",
+        "captureHar",
+        "captureUrl",
+        "importCookies",
+        "parseCookieFile",
+        "exportData",
+        "toCSV",
+        "toJSON",
+        "toNDJSON",
+        "toMarkdownTable",
+        "parseFeed",
+        "parseCSV",
+        "extractJsonLd",
+        "extractMicrodata",
+        "extractDataAttributes",
+        "extractScripts",
+        "extractSourceMapUrl",
+        "beautifyJs",
+        "normalizeUrl",
+        "extractLinks",
+        "decodeHtmlEntities",
+        "decodeUnicodeEscapes",
+        "decodeBase64",
+        "decodeHex",
+        "detectAndDecode",
+        "xorDecode",
+        "caesarDecode",
+        "rot13",
+        "parseJSONP"
+      ]
+    }
+  ]
+}

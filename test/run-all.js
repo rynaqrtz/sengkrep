@@ -15,6 +15,7 @@ const FILES = [
   '11-single-flight-and-cache.js',
   '12-scheduler.js',
   '13-sinks.js',
+  '14-api-docs.js',
 ];
 
 let failed = 0;

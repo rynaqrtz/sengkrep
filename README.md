@@ -11,7 +11,7 @@
 [![npm version](https://img.shields.io/npm/v/sengkrep?color=black&style=flat-square)](https://www.npmjs.com/package/sengkrep)
 [![node](https://img.shields.io/badge/node-%3E%3D20.18.1-black?style=flat-square)](https://nodejs.org)
 [![dependencies](https://img.shields.io/badge/dependencies-1-black?style=flat-square)](./package.json)
-[![tests](https://img.shields.io/badge/tests-256-black?style=flat-square)](./test)
+[![tests](https://img.shields.io/badge/tests-271-black?style=flat-square)](./test)
 [![license](https://img.shields.io/npm/l/sengkrep?color=black&style=flat-square)](./LICENSE)
 
 </div>
@@ -36,6 +36,7 @@
 - [Errors](#errors)
 - [Troubleshooting](#troubleshooting)
 - [Testing](#testing)
+- [API reference](./docs/api/README.md)
 - [Version history](#version-history)
 - [Architecture](#architecture)
 - [Behavior notes](#behavior-notes)
@@ -59,6 +60,8 @@
 - TypeScript definitions for the full public surface
 
 The only runtime dependency is cheerio. Everything else is Node built-ins, including the DevTools Protocol client and its WebSocket.
+
+Every exported interface, class, type and function is listed in the [API reference](./docs/api/README.md), which is generated from `index.d.ts` and checked in CI.
 
 ## Install
 
@@ -1197,13 +1200,15 @@ Node 18 is not supported. The cheerio dependency pulls `undici`, which needs Nod
 
 ![Test suite results per file](docs/test-results.svg)
 
-256 tests run against local fixture servers, so the suite needs no external network access and works offline, in CI, and on machines where outbound traffic is restricted.
+271 tests run against local fixture servers, so the suite needs no external network access and works offline, in CI, and on machines where outbound traffic is restricted.
 
 ```bash
 npm test            # every test file
 npm run typecheck   # tsc --noEmit against index.d.ts and test/types/usage.ts
 npm run coverage    # c8 coverage summary
 npm run bench       # local micro-benchmarks
+npm run docs        # regenerate docs/api from index.d.ts
+npm run docs:check  # fail when docs/api no longer matches index.d.ts
 ```
 
 | File | Covers |
@@ -1221,6 +1226,7 @@ npm run bench       # local micro-benchmarks
 | `11-single-flight-and-cache.js` | Single-flight sharing, cache hit and stale behaviour, background revalidation, `flush()` |
 | `12-scheduler.js` | Cron parsing and rejection, durations, the job store and its index, tick and runNow, catch-up after a restart, one-shot jobs, concurrency, events |
 | `13-sinks.js` | Batching, key and composite-key upserts, retries, transforms, JSONL and CSV files, generated SQL per dialect, ClickHouse inserts, S3 object keys, and sink wiring into batch, stream, export and crawl |
+| `14-api-docs.js` | The generator: every export is parsed, properties and methods are read, overloads group, links resolve, output is deterministic, and the committed reference is up to date |
 
 The two images at the top of this file are generated from the same fixtures by `node docs/charts.js`. Nothing in them is typed in by hand.
 
@@ -1228,6 +1234,7 @@ The two images at the top of this file are generated from the same fixtures by `
 
 | Version | Changes |
 |---|---|
+| 5.7.0 | `scripts/api-docs.js` and `npm run docs` generate `docs/api`, a page per export plus an index and a machine-readable `api.json`. `npm run docs:check` fails when the reference drifts from `index.d.ts`, and CI runs it. The test matrix gained a macOS runner |
 | 5.6.0 | Data sinks with upsert by key: `Sink`, `MemorySink`, `FileSink` (JSONL and CSV), `PostgresSink`, `MySQLSink`, `ClickHouseSink`, `S3Sink` and `createSink()`. `batch`, `stream`, `export` and `crawl` accept a `sink`, either as an instance you own or a descriptor the scraper creates and closes |
 | 5.5.0 | `Scheduler` and `JobStore` run jobs on cron, interval or one-shot schedules with persistent state, `catchUp` for runs missed while the process was down, `runNow`, `pause` and `resume`; the fingerprint now sends navigation headers only for actual page loads and fetch headers for JSON or body-bearing requests; caller headers override generated ones case-insensitively |
 | 5.4.0 | `singleFlight` merges identical in-flight requests, `cache.staleWhileRevalidate` and `cache.staleTtl` serve stale entries while refreshing them in the background, `res.stale` marks a stale response, and `scraper.flush()` waits for pending revalidations |
@@ -1290,6 +1297,8 @@ On a stale cache hit the request returns immediately and the refresh runs throug
 **Fingerprints.** One browser profile drives the User-Agent and client hints together, so `Sec-CH-UA` never contradicts the UA. `Accept-Encoding` only advertises `zstd` when the running Node build can decompress it. `rotateUAOnEachRequest` defaults to `false`, because real browsers keep one identity for a session.
 
 **Request shape.** The fingerprint matches the kind of request being made. A plain GET looks like a page load: `Sec-Fetch-Dest: document`, `Sec-Fetch-Mode: navigate`, `Sec-Fetch-User: ?1`, `Upgrade-Insecure-Requests: 1`, and an HTML `Accept`. A request with a JSON `Accept` header, or any request with a body, looks like a fetch: `Sec-Fetch-Dest: empty`, `Sec-Fetch-Mode: cors`, no `Sec-Fetch-User`, no `Upgrade-Insecure-Requests`, and `*/*` or a JSON `Accept`. A `Referer` header also sets `Sec-Fetch-Site` from the two origins. Headers you pass override the generated ones case-insensitively, so `user-agent` and `User-Agent` cannot both end up on the wire.
+
+**Documentation.** `docs/api` is generated, never hand written, and CI fails when it drifts from `index.d.ts`. Windows is not in the test matrix because the fixture server builds its TLS certificate with the `openssl` binary, and the suite would lose HTTPS coverage there instead of failing honestly.
 
 **Sinks.** A batch is retried before it is reported as failed, and a row missing its key field stops that batch instead of being written. Drivers are loaded lazily and never installed for you. File sinks with `replace` rewrite the whole file on every flush and keep the key set in memory, which is why the database sinks exist.
 

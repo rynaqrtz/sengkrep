@@ -2,6 +2,17 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 5.7.0
+
+### Added
+
+- `scripts/api-docs.js`, with `npm run docs` to regenerate and `npm run docs:check` to verify. It reads `index.d.ts` with the TypeScript parser and writes `docs/api`: one page per export with property and method tables, an index grouped by category, and `api.json` with the same information in machine-readable form. No new dependency, since TypeScript is already a dev dependency.
+- The drift check fails on a stale page, a missing page and a hand written file that does not belong, so the reference cannot quietly fall behind the types. CI runs it on every push.
+
+### Changed
+
+- The CI matrix now also runs the suite on macOS. Windows stays out because the fixture server signs its TLS certificate with the `openssl` binary, which the suite would silently lose HTTPS coverage on rather than fail.
+
 ## 5.6.0
 
 ### Added
