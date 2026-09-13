@@ -1,5 +1,7 @@
 import sengkrep from '../../index';
 import type {
+  CacheLookup,
+  CacheStats,
   CaptureCookie,
   CaptureEntry,
   CaptureEndpoint,
@@ -14,12 +16,15 @@ import type {
   RawResponse,
   Sengkrep,
   SengkrepOptions,
+  SingleFlightStats,
 } from '../../index';
 
 const options: SengkrepOptions = {
   logLevel: 'error',
   timeout: 5000,
   retry: { max: 2 },
+  singleFlight: { enabled: true, maxKeys: 500 },
+  cache: { ttl: 60, staleWhileRevalidate: true, staleTtl: 300 },
   redirectPolicy: { validateEachHop: true, forwardSensitiveHeaders: false, maxCrossHostHops: 2 },
   security: { allowDomains: ['example.com'], blockPrivateIPs: false },
 };
@@ -103,3 +108,18 @@ void imported;
 void parsedCookies;
 void codegenPaths;
 void cookieHelpers;
+
+async function sharedRequests(): Promise<number> {
+  const stats: SingleFlightStats = client.singleFlight.stats();
+  const key: string = client.singleFlight.key('GET', 'https://example.com/items');
+  const lookup: CacheLookup | null = client.cache?.lookup('https://example.com/items') ?? null;
+  const cacheStats: CacheStats | null = client.cache?.stats() ?? null;
+  const stale: boolean = lookup ? lookup.stale : false;
+  void key;
+  void stats;
+  void cacheStats;
+  void stale;
+  return client.flush();
+}
+
+void sharedRequests;
