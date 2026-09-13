@@ -33,6 +33,7 @@ new CdpCapture(options?: CdpCaptureOptions)
 
 ## Related
 
+- [Browser](./browser.md)
 - [CaptureCookie](./capture-cookie.md)
 - [CdpCaptureOptions](./cdp-capture-options.md)
 - [CdpCaptureResult](./cdp-capture-result.md)

@@ -1,11 +1,11 @@
 {
   "input": "index.d.ts",
-  "hash": "21a41ffa6594b997059d9bfd860f482dc3abd985",
+  "hash": "b424070960b0ca9a7c14625cab1192b46aa5b074",
   "counts": {
     "type": 18,
-    "interface": 123,
-    "function": 6,
-    "class": 71
+    "interface": 130,
+    "function": 7,
+    "class": 72
   },
   "files": [
     "README.md",
@@ -14,6 +14,9 @@
     "api.json",
     "auth-manager.md",
     "auth-options.md",
+    "auto-options.md",
+    "auto-result.md",
+    "auto.md",
     "batch-options.md",
     "batch-result.md",
     "block-detector.md",
@@ -23,7 +26,13 @@
     "block-response-input.md",
     "block-signature.md",
     "block-verdict.md",
+    "browser-goto-options.md",
+    "browser-options.md",
+    "browser-pdf-options.md",
     "browser-profile.md",
+    "browser-screenshot-options.md",
+    "browser-wait-options.md",
+    "browser.md",
     "cache-lookup.md",
     "cache-options.md",
     "cache-stats.md",

@@ -61,6 +61,7 @@ new Sengkrep(options?: SengkrepOptions)
 | `fetch` | `url: string, options?: { params?: Record<string, unknown>; request?: RequestConfig }` | `Promise<RawResponse>` |  |
 | `load` | `html: string` | `CheerioAPI` |  |
 | `probe` | `url: string, options?: { request?: RequestConfig; detector?: BlockDetector }` | `Promise<ProbeResult>` |  |
+| `auto` | `url: string, options?: AutoOptions` | `Promise<AutoResult>` |  |
 | `extract` | `url: string, schema: Schema<T>, options?: ExtractOptions` | `Promise<ExtractResult<T>>` |  |
 | `batch` | `urls: string[], schema: Schema<T>, options?: BatchOptions` | `Promise<BatchResult<T>[]>` |  |
 | `stream` | `urls: string[], schema: Schema<T>, options?: BatchOptions` | `AsyncGenerator<BatchResult<T>>` |  |
@@ -87,6 +88,8 @@ new Sengkrep(options?: SengkrepOptions)
 
 - [AdaptiveThrottle](./adaptive-throttle.md)
 - [AuthManager](./auth-manager.md)
+- [AutoOptions](./auto-options.md)
+- [AutoResult](./auto-result.md)
 - [BatchOptions](./batch-options.md)
 - [BatchResult](./batch-result.md)
 - [BlockDetector](./block-detector.md)
@@ -132,6 +135,7 @@ new Sengkrep(options?: SengkrepOptions)
 - [Transport](./transport.md)
 - [UrlDeduplicator](./url-deduplicator.md)
 - [WordPress](./word-press.md)
+- [auto](./auto.md)
 
 ## Declaration
 

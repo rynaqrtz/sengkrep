@@ -1,6 +1,6 @@
 # API reference
 
-218 exports: 71 classes, 6 functions, 123 interfaces, 18 types.
+227 exports: 72 classes, 7 functions, 130 interfaces, 18 types.
 
 Generated from `index.d.ts` by `npm run docs`. Do not edit this directory by hand; `npm run docs:check` fails when it drifts.
 
@@ -121,14 +121,20 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [SessionPoolOptions](./session-pool-options.md) | `interface` |
 | [SessionPoolSession](./session-pool-session.md) | `interface` |
 
-## Options (27)
+## Options (33)
 
 | Name | Kind |
 | --- | --- |
 | [AdaptiveThrottleOptions](./adaptive-throttle-options.md) | `interface` |
 | [AuthOptions](./auth-options.md) | `interface` |
+| [AutoOptions](./auto-options.md) | `interface` |
 | [BatchOptions](./batch-options.md) | `interface` |
 | [BlockOptions](./block-options.md) | `interface` |
+| [BrowserGotoOptions](./browser-goto-options.md) | `interface` |
+| [BrowserOptions](./browser-options.md) | `interface` |
+| [BrowserPdfOptions](./browser-pdf-options.md) | `interface` |
+| [BrowserScreenshotOptions](./browser-screenshot-options.md) | `interface` |
+| [BrowserWaitOptions](./browser-wait-options.md) | `interface` |
 | [CacheOptions](./cache-options.md) | `interface` |
 | [CircuitBreakerOptions](./circuit-breaker-options.md) | `interface` |
 | [ComplianceOptions](./compliance-options.md) | `interface` |
@@ -153,10 +159,11 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [StorageOptions](./storage-options.md) | `interface` |
 | [WebhookOptions](./webhook-options.md) | `interface` |
 
-## Results (15)
+## Results (16)
 
 | Name | Kind |
 | --- | --- |
+| [AutoResult](./auto-result.md) | `interface` |
 | [BatchResult](./batch-result.md) | `interface` |
 | [CacheStats](./cache-stats.md) | `interface` |
 | [DiffReport](./diff-report.md) | `interface` |
@@ -173,13 +180,14 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [ValidationReport](./validation-report.md) | `interface` |
 | [WebhookDeliveryResult](./webhook-delivery-result.md) | `interface` |
 
-## Classes (41)
+## Classes (42)
 
 | Name | Kind |
 | --- | --- |
 | [AdaptiveThrottle](./adaptive-throttle.md) | `class` |
 | [AuthManager](./auth-manager.md) | `class` |
 | [BlockDetector](./block-detector.md) | `class` |
+| [Browser](./browser.md) | `class` |
 | [Cache](./cache.md) | `class` |
 | [CircuitBreaker](./circuit-breaker.md) | `class` |
 | [ContentDedup](./content-dedup.md) | `class` |
@@ -265,10 +273,11 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [SchemaField](./schema-field.md) | `type` |
 | [StorageBackend](./storage-backend.md) | `type` |
 
-## Functions (4)
+## Functions (5)
 
 | Name | Kind |
 | --- | --- |
+| [auto](./auto.md) | `function` |
 | [createStorage](./create-storage.md) | `function` |
 | [doctor](./doctor.md) | `function` |
 | [isJsonPath](./is-json-path.md) | `function` |

@@ -362,6 +362,22 @@ function handler(req, res) {
     return res.end('<html><body><h1>Widget Page</h1><nav class="pagination"><a class="page-numbers" href="/p1">1</a><a class="page-numbers" href="/p2">2</a><a class="page-numbers" href="/p3">3</a><a class="next page-numbers" href="/p2">Next</a></nav></body></html>');
   }
 
+  if (url.pathname === '/auto-page') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    return res.end(`<!doctype html><html><head><title>Auto Shop</title>
+      <meta name="description" content="Everything auto extracted">
+      <script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Kopi Sengkrep","offers":{"@type":"Offer","price":"45000"}}</script>
+      </head><body>
+      <div class="product-card"><h3 class="name">Kopi A</h3><a href="/a">view</a><img src="/a.jpg"><span class="price">10000</span></div>
+      <div class="product-card"><h3 class="name">Kopi B</h3><a href="/b">view</a><img src="/b.jpg"><span class="price">12000</span></div>
+      <div class="product-card"><h3 class="name">Kopi C</h3><a href="/c">view</a><img src="/c.jpg"><span class="price">14000</span></div>
+      <div class="product-card"><h3 class="name">Kopi D</h3><a href="/d">view</a><img src="/d.jpg"><span class="price">16000</span></div>
+      <table><thead><tr><th>size</th><th>stock</th></tr></thead><tbody>
+        <tr><td>250g</td><td>12</td></tr><tr><td>500g</td><td>7</td></tr>
+      </tbody></table>
+      </body></html>`);
+  }
+
   if (url.pathname === '/structured') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end('<html><body><script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Sepatu Sengkrep","offers":{"@type":"Offer","price":"250000"}}</script><div itemscope itemtype="https://schema.org/Person"><span itemprop="name">Budi</span><span itemprop="jobTitle">Developer</span></div><div data-product-id="42" data-in-stock="true">card</div></body></html>');

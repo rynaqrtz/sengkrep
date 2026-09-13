@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="940" height="606" viewBox="0 0 940 606" role="img" aria-label="Test suite results per file">
-<rect x="0.5" y="0.5" width="939" height="605" rx="12" fill="#ffffff" stroke="#d8dee4"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="636" viewBox="0 0 940 636" role="img" aria-label="Test suite results per file">
+<rect x="0.5" y="0.5" width="939" height="635" rx="12" fill="#ffffff" stroke="#d8dee4"/>
 <text x="24" y="36" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#1f2328">Test suite results</text>
-<text x="24" y="59" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" fill="#57606a">311 passed, 0 failed across 16 files, all against local fixture servers</text>
+<text x="24" y="59" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" fill="#57606a">328 passed, 0 failed across 17 files, all against local fixture servers</text>
 <text x="24" y="108" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">01-fetcher-and-extraction</text>
 <rect x="268" y="97" width="390" height="14" rx="4" fill="#0969da"/>
 <text x="668" y="108" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">21</text>
@@ -50,7 +50,10 @@
 <text x="24" y="558" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">16-anti-block</text>
 <rect x="268" y="547" width="390" height="14" rx="4" fill="#0969da"/>
 <text x="668" y="558" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">21</text>
-<line x1="24" y1="572" x2="916" y2="572" stroke="#d8dee4" stroke-width="1"/>
-<text x="24" y="596" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#8250df">total</text>
-<text x="916" y="596" text-anchor="end" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#8250df">311 passed</text>
+<text x="24" y="588" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">17-browser-and-auto</text>
+<rect x="268" y="577" width="316" height="14" rx="4" fill="#0969da"/>
+<text x="594" y="588" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">17</text>
+<line x1="24" y1="602" x2="916" y2="602" stroke="#d8dee4" stroke-width="1"/>
+<text x="24" y="626" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#8250df">total</text>
+<text x="916" y="626" text-anchor="end" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#8250df">328 passed</text>
 </svg>

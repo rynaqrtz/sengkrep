@@ -65,6 +65,12 @@ class CdpSession {
     return this;
   }
 
+  off(method, handler, sessionId) {
+    this._listeners = this._listeners.filter((listener) => listener.handler !== handler
+      || (sessionId !== undefined && listener.sessionId !== sessionId));
+    return this;
+  }
+
   once(method, handler, sessionId) {
     const wrapper = (params, eventSessionId) => {
       this._listeners = this._listeners.filter((listener) => listener.handler !== wrapper);

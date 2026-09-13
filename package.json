@@ -1,11 +1,21 @@
 {
   "name": "sengkrep",
-  "version": "5.9.0",
+  "version": "6.0.0",
   "description": "A reliability layer for web scraping in Node.js: unified HTTP/1.1 + HTTP/2 transport, coherent browser fingerprints, adaptive throttling, schema validation, selector health monitoring, content dedup, circuit breaker, resumable crawling, distributed queues, pluggable storage, robots.txt compliance, network capture (DevTools Protocol, HAR, local proxy, Playwright), and full TypeScript definitions.",
   "main": "index.js",
   "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "require": "./index.js",
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "index.js",
+    "index.mjs",
     "index.d.ts",
     "src",
     "bin",
@@ -29,6 +39,7 @@
   "keywords": [
     "web-scraping",
     "scraper",
+    "esm",
     "reliability",
     "typescript",
     "schema-validation",
@@ -83,6 +94,6 @@
     "typescript": "^5.6.0"
   },
   "engines": {
-    "node": ">=20.18.1"
+    "node": ">=22.5.0"
   }
 }

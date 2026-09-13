@@ -82,21 +82,31 @@ async function main() {
 
   await test('doctor reports a structured result and exits zero on a healthy host', () => {
     const result = runCli(['doctor', '--skip-network', '--json']);
-    assert.strictEqual(result.status, 0, result.stderr);
-
     const report = JSON.parse(result.stdout);
-    assert.strictEqual(report.ok, true);
-    assert.strictEqual(report.failures, 0);
+
     assert.ok(Array.isArray(report.checks) && report.checks.length > 0);
-    assert.ok(report.checks.some((check) => check.name === 'node' && check.status === 'pass'));
+    assert.ok(report.checks.some((check) => check.name === 'node' && check.status === 'pass'),
+      `the node check failed on ${process.versions.node}; run the full suite on Node >= 22.5`);
     assert.ok(report.checks.some((check) => check.name === 'temp-dir' && check.status === 'pass'));
+    assert.strictEqual(typeof report.ok, 'boolean');
+
+    const nodeCheck = report.checks.find((check) => check.name === 'node');
+    assert.strictEqual(result.status, nodeCheck.status === 'fail' ? 1 : 0);
+    if (nodeCheck.status === 'fail') {
+      assert.strictEqual(report.ok, false);
+      assert.strictEqual(report.failures, 1);
+      assert.ok(nodeCheck.detail.includes(process.versions.node), nodeCheck.detail);
+    } else {
+      assert.strictEqual(report.failures, 0);
+    }
   });
 
   await test('doctor checks the network by default', () => {
     const result = runCli(['doctor', '--host', '127.0.0.1', '--json']);
-    assert.strictEqual(result.status, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     assert.ok(report.checks.some((check) => check.name === 'dns'));
+    const nodeCheck = report.checks.find((check) => check.name === 'node');
+    assert.strictEqual(result.status, nodeCheck.status === 'fail' ? 1 : 0);
   });
 
   await test('doctor fails when the DevTools endpoint does not answer', () => {

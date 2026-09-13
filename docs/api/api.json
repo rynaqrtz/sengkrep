@@ -1,11 +1,11 @@
 {
   "generatedFrom": "index.d.ts",
-  "hash": "21a41ffa6594b997059d9bfd860f482dc3abd985",
+  "hash": "b424070960b0ca9a7c14625cab1192b46aa5b074",
   "counts": {
     "type": 18,
-    "interface": 123,
-    "function": 6,
-    "class": 71
+    "interface": 130,
+    "function": 7,
+    "class": 72
   },
   "categories": {
     "Types": [
@@ -49,6 +49,7 @@
       "ValidationRule"
     ],
     "Results": [
+      "AutoResult",
       "BatchResult",
       "CacheStats",
       "DiffReport",
@@ -68,8 +69,14 @@
     "Options": [
       "AdaptiveThrottleOptions",
       "AuthOptions",
+      "AutoOptions",
       "BatchOptions",
       "BlockOptions",
+      "BrowserGotoOptions",
+      "BrowserOptions",
+      "BrowserPdfOptions",
+      "BrowserScreenshotOptions",
+      "BrowserWaitOptions",
       "CacheOptions",
       "CircuitBreakerOptions",
       "ComplianceOptions",
@@ -111,6 +118,7 @@
       "SchedulerTickEvent"
     ],
     "Functions": [
+      "auto",
       "createStorage",
       "doctor",
       "isJsonPath",
@@ -120,6 +128,7 @@
       "AdaptiveThrottle",
       "AuthManager",
       "BlockDetector",
+      "Browser",
       "Cache",
       "CircuitBreaker",
       "ContentDedup",
@@ -1413,6 +1422,50 @@
         "headers",
         "fromCache"
       ],
+      "methods": []
+    },
+    {
+      "name": "AutoResult",
+      "kind": "interface",
+      "slug": "auto-result",
+      "category": "Results",
+      "properties": [
+        "url",
+        "status",
+        "fromCache",
+        "rendered",
+        "title",
+        "description",
+        "item",
+        "items",
+        "tables",
+        "sources",
+        "text"
+      ],
+      "methods": []
+    },
+    {
+      "name": "AutoOptions",
+      "kind": "interface",
+      "slug": "auto-options",
+      "category": "Options",
+      "properties": [
+        "render",
+        "request",
+        "skipRepeating",
+        "dataAttributes",
+        "dataSelector",
+        "text",
+        "maxText"
+      ],
+      "methods": []
+    },
+    {
+      "name": "auto",
+      "kind": "function",
+      "slug": "auto",
+      "category": "Functions",
+      "properties": [],
       "methods": []
     },
     {
@@ -3036,6 +3089,88 @@
       ]
     },
     {
+      "name": "BrowserOptions",
+      "kind": "interface",
+      "slug": "browser-options",
+      "category": "Options",
+      "properties": [
+        "viewport",
+        "userAgent"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BrowserGotoOptions",
+      "kind": "interface",
+      "slug": "browser-goto-options",
+      "category": "Options",
+      "properties": [
+        "timeout",
+        "waitForSelector"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BrowserWaitOptions",
+      "kind": "interface",
+      "slug": "browser-wait-options",
+      "category": "Options",
+      "properties": [
+        "timeout",
+        "pollMs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BrowserScreenshotOptions",
+      "kind": "interface",
+      "slug": "browser-screenshot-options",
+      "category": "Options",
+      "properties": [
+        "format",
+        "quality",
+        "fullPage"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BrowserPdfOptions",
+      "kind": "interface",
+      "slug": "browser-pdf-options",
+      "category": "Options",
+      "properties": [
+        "printBackground",
+        "landscape"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Browser",
+      "kind": "class",
+      "slug": "browser",
+      "category": "Classes",
+      "properties": [
+        "opened"
+      ],
+      "methods": [
+        "open",
+        "goto",
+        "evaluate",
+        "html",
+        "text",
+        "url",
+        "title",
+        "waitForSelector",
+        "click",
+        "type",
+        "screenshot",
+        "pdf",
+        "scroll",
+        "close",
+        "connect"
+      ]
+    },
+    {
       "name": "createCdpRenderer",
       "kind": "function",
       "slug": "create-cdp-renderer",
@@ -3400,6 +3535,7 @@
         "fetch",
         "load",
         "probe",
+        "auto",
         "extract",
         "batch",
         "stream",
@@ -3491,6 +3627,8 @@
         "IdentityPool",
         "jsonPath",
         "isJsonPath",
+        "auto",
+        "Browser",
         "Doctor",
         "Scheduler",
         "JobStore",
@@ -3522,6 +3660,7 @@
         "submitForm",
         "inferSchema",
         "probe",
+        "auto",
         "captureHar",
         "captureUrl",
         "importCookies",

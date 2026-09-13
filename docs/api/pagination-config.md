@@ -14,6 +14,10 @@ Category: Options · Source: [index.d.ts](../../index.d.ts) · [All exports](./R
 | `delayBetweenPages` | `number` | no |  |
 | `stopOnDuplicate` | `boolean` | no |  |
 
+## Related
+
+- [auto](./auto.md)
+
 ## Declaration
 
 ```ts

@@ -1,4 +1,4 @@
-# ExtractOptions
+# AutoOptions
 
 interface
 
@@ -8,14 +8,13 @@ Category: Options · Source: [index.d.ts](../../index.d.ts) · [All exports](./R
 
 | Property | Type | Required | Flags |
 | --- | --- | --- | --- |
-| `strict` | `boolean` | no |  |
-| `responseType` | `'auto' \| 'html' \| 'json' \| 'rss' \| 'csv'` | no |  |
-| `params` | `Record<string, string \| number>` | no |  |
-| `allowBinary` | `boolean` | no |  |
-| `allowStreamed` | `boolean` | no |  |
-| `includeBuffer` | `boolean` | no |  |
 | `render` | `boolean` | no |  |
 | `request` | `RequestConfig` | no |  |
+| `skipRepeating` | `boolean` | no |  |
+| `dataAttributes` | `boolean` | no |  |
+| `dataSelector` | `string` | no |  |
+| `text` | `boolean` | no |  |
+| `maxText` | `number` | no |  |
 
 ## Related
 
@@ -25,5 +24,5 @@ Category: Options · Source: [index.d.ts](../../index.d.ts) · [All exports](./R
 ## Declaration
 
 ```ts
-interface ExtractOptions { ... }
+interface AutoOptions { ... }
 ```

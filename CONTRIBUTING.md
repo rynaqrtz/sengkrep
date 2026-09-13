@@ -8,7 +8,7 @@ cd sengkrep
 npm install
 ```
 
-Node 22 or newer is recommended for local work. CI runs the suite on Node 20, 22 and 24.
+Node 22.5 or newer is required (that is the package's own floor now). CI runs the suite on Node 22 and 24.
 
 ## Checks before a pull request
 

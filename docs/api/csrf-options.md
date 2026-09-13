@@ -15,6 +15,10 @@ Category: Options · Source: [index.d.ts](../../index.d.ts) · [All exports](./R
 | `metaSelectors` | `string[]` | no |  |
 | `inputSelectors` | `string[]` | no |  |
 
+## Related
+
+- [auto](./auto.md)
+
 ## Declaration
 
 ```ts

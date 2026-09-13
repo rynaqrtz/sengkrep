@@ -2,6 +2,18 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 6.0.0
+
+### Added
+
+- `Browser`, a CDP browser-automation class with no Puppeteer and no Playwright: `goto` (waits for the load event, optionally `waitForSelector`), `evaluate`, `html`, `text`, `url`, `title`, `waitForSelector` (polls, `SELECTOR_TIMEOUT` on expiry), `click` (scroll into view, then move, press and release at the element's center through `Input.dispatchMouseEvent`), `type` (focus, real key events, then `input` and `change`), `screenshot` (viewport or full page), `pdf`, `scroll` and `close`. `viewport` and `userAgent` overrides apply through `Emulation.setDeviceMetricsOverride` and `Network.setUserAgentOverride`. Reuses the same connection code as the capture layer, and `renderers.cdp()` remains the one-call version of it.
+- `auto()`, zero-schema extraction. Reads the title and meta description, the best JSON-LD or microdata entity as `item`, every table as header-keyed rows, repeating containers (class-shared groups of three or more, ranked) as `items`, and `data-*` attribute rows as a fallback. Each source is labeled in `sources`. Accepts `render`, `skipRepeating`, `dataAttributes`, `text` and `maxText`. Exported as `sengkrep.auto(url, options)` and on every instance.
+- Dual ESM and CJS. The package now has an `exports` map with a real ESM entry (`index.mjs`) that re-exports the full surface with named exports, alongside the unchanged `require()` entry.
+
+### Changed
+
+- `engines.node` is now `>=22.5.0`, up from `>=20.18.1`. The `sqlite` storage backend needs `node:sqlite`, which landed in Node 22.5; the old floor advertised a backend that only worked on some supported versions. CI now runs Node 22 and 24. This is the only breaking change: `require('sengkrep')` behaves exactly as before.
+
 ## 5.9.0
 
 ### Added

@@ -40,6 +40,7 @@ const { DistributedQueue, MemoryAdapter }   = require('./modules/DistributedQueu
 const AdaptiveThrottle                     = require('./modules/AdaptiveThrottle');
 const SingleFlight                         = require('./modules/SingleFlight');
 const { BlockDetector, BlockError }        = require('./modules/BlockDetector');
+const autoExtract                          = require('./modules/AutoExtract').auto;
 const { Identity, IdentityPool }            = require('./modules/Identity');
 const Scheduler                            = require('./modules/Scheduler');
 const ContentDedup                         = require('./modules/ContentDedup');
@@ -1023,6 +1024,22 @@ class Sengkrep {
     const res = await this._fetch(url);
     const $   = this.extractor.load(res.body);
     return inferSchema($, options);
+  }
+
+  async auto(url, options = {}) {
+    const res = (this.renderer && (options.render ?? this.renderEnabled))
+      ? await this._renderResponse(url, options)
+      : await this._fetch(url, options.request ?? {});
+
+    const $ = this.extractor.load(res.body);
+    const result = autoExtract($, options);
+
+    result.url = res.url ?? url;
+    result.status = res.status;
+    result.fromCache = res.fromCache === true;
+    if (res.rendered) result.rendered = true;
+
+    return result;
   }
 
   distributedQueue(options = {}) {

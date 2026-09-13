@@ -1,6 +1,7 @@
 const NetworkCapture = require('./NetworkCapture');
 const { CdpCapture, CdpSession, DEFAULT_HOST, httpGetJson } = require('./CdpCapture');
 const { CdpRenderer, createCdpRenderer } = require('./CdpRenderer');
+const { Browser } = require('./Browser');
 const { CaptureProxy } = require('./CaptureProxy');
 const PlaywrightCapture = require('./PlaywrightCapture');
 const HarImporter = require('./HarImporter');
@@ -15,6 +16,7 @@ module.exports = {
   CdpCapture,
   CdpSession,
   CdpRenderer,
+  Browser,
   CaptureProxy,
   PlaywrightCapture,
   HarImporter,

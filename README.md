@@ -9,7 +9,8 @@
 <p>A reliability layer for web scraping in Node.js.</p>
 
 [![npm version](https://img.shields.io/npm/v/sengkrep?color=black&style=flat-square)](https://www.npmjs.com/package/sengkrep)
-[![node](https://img.shields.io/badge/node-%3E%3D20.18.1-black?style=flat-square)](https://nodejs.org)
+[![node](https://img.shields.io/badge/node-%3E%3D22.5-black?style=flat-square)](https://nodejs.org)
+[![module](https://img.shields.io/badge/module-cjs%20%2B%20esm-black?style=flat-square)](#install)
 [![dependencies](https://img.shields.io/badge/dependencies-1-black?style=flat-square)](./package.json)
 [![tests](https://img.shields.io/badge/tests-271-black?style=flat-square)](./test)
 [![license](https://img.shields.io/npm/l/sengkrep?color=black&style=flat-square)](./LICENSE)
@@ -27,6 +28,8 @@
 - [Data sinks](#data-sinks)
 - [Network capture](#network-capture)
 - [Anti-block](#anti-block)
+- [Browser automation](#browser-automation)
+- [Zero-schema extraction](#zero-schema-extraction)
 - [Command line](#command-line)
 - [Core API](#core-api)
 - [Schema syntax](#schema-syntax)
@@ -56,6 +59,8 @@
 - rate limiting and adaptive throttling per host
 - proxy rotation, cookie jar, session pool, CSRF handling, token refresh
 - bot-wall detection with per-session browser identities and proxy session pinning
+- browser automation over the DevTools Protocol: navigate, click, type, evaluate, screenshot, wait
+- zero-schema `auto()` extraction from JSON-LD, microdata, tables and repeating containers
 - resumable crawling, a distributed queue, and three storage backends
 - a scheduler with persistent job state, so a cadence survives a restart
 - data sinks with upsert by key, to Postgres, MySQL, ClickHouse, S3, a file or memory
@@ -73,7 +78,14 @@ Every exported interface, class, type and function is listed in the [API referen
 npm install sengkrep
 ```
 
-Node 20.18.1 or newer. That floor comes from the cheerio dependency, which pulls `undici`, which needs 20.18.1. Node 22.5 or newer additionally enables the `sqlite` storage backend through `node:sqlite`.
+Node 22.5 or newer, from both CommonJS and ESM:
+
+```js
+import sengkrep from 'sengkrep';          // ESM: also named exports
+const sengkrep = require('sengkrep');     // CJS: unchanged
+```
+
+The ESM entry exports every name from the CJS one, so `import sengkrep, { create, jsonPath, Browser } from 'sengkrep'` works. The 22.5 floor is what `node:sqlite` needs, which makes the `sqlite` storage backend available on every supported Node instead of only on some.
 
 The package was published as `sengkrep-ryna` up to 3.4.0. That name is deprecated and receives no updates.
 
@@ -831,6 +843,64 @@ const client = sengkrep.create({
 });
 ```
 
+## Browser automation
+
+`Browser` drives a real Chrome over the DevTools Protocol, through the same connection code as the capture layer, with no Playwright and no Puppeteer:
+
+```js
+const browser = await sengkrep.Browser.connect();
+
+await browser.goto('https://app.example.com');
+await browser.waitForSelector('.dashboard');
+await browser.click('button.load-more');
+await browser.type('#search', 'kopi');
+
+const html = await browser.html();
+const title = await browser.title();
+const price = await browser.evaluate(() => document.querySelector('.price')?.textContent);
+const shot = await browser.screenshot({ fullPage: true });
+
+browser.close();
+```
+
+| Call | What it does |
+|---|---|
+| `goto(url, options?)` | Navigate and wait for the load event, then optionally `waitForSelector` |
+| `evaluate(fn or expression)` | Run JavaScript in the page and return the value |
+| `html()` / `text()` | `document.documentElement.outerHTML`, or the page's inner text |
+| `url()` / `title()` | Current location and document title |
+| `waitForSelector(selector, options?)` | Poll until the element exists; `SELECTOR_TIMEOUT` when it never does |
+| `click(selector, options?)` | Scroll into view, then move, press and release at the element's center |
+| `type(selector, text, options?)` | Focus the field, send real key events, fire `input` and `change` |
+| `screenshot(options?)` | PNG or JPEG of the viewport or the full page, as a `Buffer` |
+| `pdf(options?)` | Print the page to PDF, as a `Buffer` |
+| `scroll(options?)` | `window.scrollTo`, with an optional settle delay |
+| `close()` | Close the target and the connection |
+
+Options: `viewport` sets the window size and mobile flag through `Emulation.setDeviceMetricsOverride`, `userAgent` overrides the browser's own, and `timeout` bounds every wait. `click` and `type` wait for their selector first, so a slow render does not turn into a silent no-op.
+
+Because it is the same CDP client the capture layer uses, a `Browser` session and a `NetworkCapture` can look at the same browser. The existing `renderers.cdp()` is this class reduced to one `goto` plus `outerHTML`, so `render: true` keeps working unchanged.
+
+## Zero-schema extraction
+
+Writing a schema needs a page in front of you. `auto()` reads what the page volunteers instead, which is enough for a first pass, a diff baseline, or a quick answer:
+
+```js
+const result = await sengkrep.auto('https://shop.example.com/product/123');
+
+result.title;         // <title> or og:title
+result.description;   // meta description or og:description
+result.item;          // JSON-LD or microdata entity, e.g. { name, offers: { price } }
+result.items;         // repeating containers: cards, list rows, articles
+result.tables;        // every <table> as rows of header-keyed objects
+result.sources;       // where each part came from: ['json-ld', 'tables', 'repeating:.product-card']
+result.text;          // the page text, capped at maxText (default 2000)
+```
+
+Detection order: structured data first, because JSON-LD and microdata are the most reliable thing on the page; then tables; then repeating containers, found by grouping elements that share a class and appear three or more times; then `data-*` attributes. Every source is labeled in `sources`, so you know what to trust and what to verify.
+
+`auto()` is also a good step before writing a schema: run it, look at `item` and `items[0]`, and the selectors you need are usually the class names on those objects. It accepts `render: true`, the same `request` options as `extract()`, and `skipRepeating`, `dataAttributes: false`, `text: false` and `maxText` to trim the work.
+
 ## Command line
 
 The package installs a `sengkrep` command. `sengkrep help` prints the same list, and every command is a thin wrapper over the library, so anything the CLI does can be done from code.
@@ -934,7 +1004,7 @@ sengkrep doctor --json
 
 `doctor` checks what decides which features work, before you spend time on a request that was never going to succeed:
 
-- the Node version against the `>=20.18.1` floor
+- the Node version against the `>=22.5.0` floor
 - whether `node:sqlite` is available, which gates the `sqlite` storage backend
 - whether this Node build can decompress zstd, which decides if `Accept-Encoding` advertises it
 - whether the temp directory and the working directory are writable, which streaming and cache state need
@@ -1438,13 +1508,13 @@ A `transform` that returns an object is serialized as-is. Return a string or num
 
 ### Node 18 reports `File is not defined`
 
-Node 18 is not supported. The cheerio dependency pulls `undici`, which needs Node 20.18.1 to even load. Upgrade Node.
+The package needs Node 22.5 or newer, mostly because the `sqlite` storage backend and the zstd checks assume it. Upgrade Node.
 
 ## Testing
 
 ![Test suite results per file](docs/test-results.svg)
 
-311 tests run against local fixture servers, so the suite needs no external network access and works offline, in CI, and on machines where outbound traffic is restricted.
+328 tests run against local fixture servers, so the suite needs no external network access and works offline, in CI, and on machines where outbound traffic is restricted.
 
 ```bash
 npm test            # every test file
@@ -1473,6 +1543,7 @@ npm run docs:check  # fail when docs/api no longer matches index.d.ts
 | `14-api-docs.js` | The generator: every export is parsed, properties and methods are read, overloads group, links resolve, output is deterministic, and the committed reference is up to date |
 | `15-cli.js` | The command line against the fixture server: flag parsing including `--flag=value`, `scrape` with `--output` and `--sink`, `doctor` as text, JSON and a failing check, `jobs` listing and JSON, `run` with `--once`, `--job`, `--due`, a throwing handler and `--watch` stopped by `SIGINT`, and cookie import |
 | `16-anti-block.js` | Block detection per vendor, confidence levels and custom signatures, `probe()`, the three block modes, identity stickiness and rotation, identity-driven headers, `{session}` proxy substitution, JSONPath expressions in schemas, and the exported `jsonPath` helper |
+| `17-browser-and-auto.js` | The `Browser` CDP layer: open, goto, evaluate, waitForSelector, click, type, screenshot, PDF, viewport and user-agent overrides, closed-session rejection. `auto()`: JSON-LD, microdata, tables, repeating containers, data attributes, plain pages. The ESM entry point and the `>=22.5` engines floor |
 
 The two images at the top of this file are generated from the same fixtures by `node docs/charts.js`. Nothing in them is typed in by hand.
 
@@ -1480,6 +1551,7 @@ The two images at the top of this file are generated from the same fixtures by `
 
 | Version | Changes |
 |---|---|
+| 6.0.0 | `Browser` drives Chrome over the DevTools Protocol with no Puppeteer or Playwright: goto, evaluate, waitForSelector, click, type, screenshot, PDF. `auto()` extracts title, description, JSON-LD or microdata entities, tables and repeating containers with no schema at all. Dual ESM and CJS through an `exports` map. Node floor is now 22.5.0, which makes the `sqlite` backend available on every supported Node |
 | 5.9.0 | `BlockDetector` names the bot wall (Cloudflare, DataDome, PerimeterX, Akamai, Imperva, Kasada, AWS WAF, Sucuri, generic CAPTCHA) with a confidence and the signals that matched, `probe()` checks one URL without throwing, `blocks` has report, retry and throw modes, `IdentityPool` keeps one coherent browser per session and rotates on block, proxy URLs take `{session}` for per-identity exits, and JSON schemas accept JSONPath (wildcards, slices, unions, recursive descent and filters) through a built-in engine |
 | 5.8.0 | `sengkrep doctor` reports Node, `node:sqlite`, zstd, writable directories, optional drivers, DNS and a DevTools endpoint, as text or JSON, and `sengkrep.doctor()` returns the same report. `sengkrep jobs` and `sengkrep run` expose the scheduler from the terminal with `--job`, `--once`, `--due` and `--watch`, and `sengkrep scrape --sink` writes through a sink descriptor. `sengkrep scrape` no longer hangs, and `--flag=value` is parsed instead of being ignored |
 | 5.7.0 | `scripts/api-docs.js` and `npm run docs` generate `docs/api`, a page per export plus an index and a machine-readable `api.json`. `npm run docs:check` fails when the reference drifts from `index.d.ts`, and CI runs it. The test matrix gained a macOS runner |
@@ -1557,6 +1629,16 @@ On a stale cache hit the request returns immediately and the refresh runs throug
 **Redirects.** Every hop is checked, not just the first URL. When a hop changes origin, `Authorization`, `Cookie`, `Proxy-Authorization`, `X-Api-Key` and `X-Auth-Token` are dropped and any pinned IP is released, so the new host resolves on its own. A 302 or 303 turns a POST into a bodyless GET, while 307 and 308 keep the method and body. Chains that cross more than `maxCrossHostHops` hosts stop with `TOO_MANY_REDIRECTS`.
 
 **Lifecycle.** A scraper holds keep-alive sockets and, when `observability.enabled` is set, a metrics server. Call `scraper.close()` when a script is done, otherwise Node keeps the process alive.
+
+### Migrating to 6.0.0
+
+Two things break, and both are one-line fixes.
+
+**Node 22.5+ is required.** The floor moves from 20.18.1 to 22.5.0 because the `sqlite` storage backend needs `node:sqlite`, and shipping a floor the backend does not work under was worse than raising it. Nothing else in the code needs 22.5; if you do not use `sqlite` and cannot upgrade yet, 5.9.0 still works and receives no updates.
+
+**ESM is now the documented import path.** `require('sengkrep')` is unchanged. If you `import` the package in a bundler or Node with `--experimental-specifier-resolution`, the package's `exports` map now points at a real ESM entry, so named imports like `import { create, jsonPath } from 'sengkrep'` resolve instead of falling through to CJS interop quirks.
+
+Everything else in 6.0.0 is additive: `Browser`, `auto()`, and `probe` stayed as introduced in 5.9.0.
 
 ### Migrating to 5.5.0
 

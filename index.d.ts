@@ -671,6 +671,31 @@ export interface ProbeResult {
   fromCache: boolean;
 }
 
+export interface AutoResult {
+  url?: string;
+  status?: number;
+  fromCache?: boolean;
+  rendered?: boolean;
+  title: string | null;
+  description: string | null;
+  item: Record<string, unknown> | null;
+  items: Array<Record<string, unknown>>;
+  tables?: Array<Record<string, unknown>>;
+  sources: string[];
+  text?: string;
+}
+
+export interface AutoOptions {
+  render?: boolean;
+  request?: RequestConfig;
+  skipRepeating?: boolean;
+  dataAttributes?: boolean;
+  dataSelector?: string;
+  text?: boolean;
+  maxText?: number;
+}
+
+export function auto(url: string, options?: AutoOptions): Promise<AutoResult>;
 export function jsonPath<T = unknown>(root: unknown, expression: string): T[];
 export function isJsonPath(expression: string): boolean;
 
@@ -1646,6 +1671,52 @@ export class CdpRenderer {
   render(url: string, options?: CdpRendererOptions): Promise<string | CdpRenderResult>;
 }
 
+export interface BrowserOptions extends CdpCaptureOptions {
+  viewport?: { width?: number; height?: number; deviceScaleFactor?: number; mobile?: boolean };
+  userAgent?: string;
+}
+
+export interface BrowserGotoOptions {
+  timeout?: number;
+  waitForSelector?: string;
+}
+
+export interface BrowserWaitOptions {
+  timeout?: number;
+  pollMs?: number;
+}
+
+export interface BrowserScreenshotOptions {
+  format?: 'png' | 'jpeg';
+  quality?: number;
+  fullPage?: boolean;
+}
+
+export interface BrowserPdfOptions {
+  printBackground?: boolean;
+  landscape?: boolean;
+}
+
+export class Browser {
+  constructor(options?: BrowserOptions);
+  readonly opened: unknown | null;
+  open(): Promise<unknown>;
+  goto(url: string, options?: BrowserGotoOptions): Promise<Browser>;
+  evaluate<T = unknown>(expression: string, options?: { awaitPromise?: boolean }): Promise<T>;
+  html(): Promise<string>;
+  text(): Promise<string>;
+  url(): Promise<string>;
+  title(): Promise<string>;
+  waitForSelector(selector: string, options?: BrowserWaitOptions): Promise<boolean>;
+  click(selector: string, options?: BrowserWaitOptions & { waitForNavigation?: boolean }): Promise<boolean>;
+  type(selector: string, text: string, options?: BrowserWaitOptions): Promise<boolean>;
+  screenshot(options?: BrowserScreenshotOptions): Promise<Buffer>;
+  pdf(options?: BrowserPdfOptions): Promise<Buffer>;
+  scroll(options?: { to?: number; amount?: number; settleMs?: number }): Promise<boolean>;
+  close(): void;
+  static connect(options?: BrowserOptions): Promise<Browser>;
+}
+
 export function createCdpRenderer(options?: CdpRendererOptions): CdpRenderer;
 
 export interface CaptureCookie {
@@ -1888,6 +1959,7 @@ export class Sengkrep {
   fetch(url: string, options?: { params?: Record<string, unknown>; request?: RequestConfig }): Promise<RawResponse>;
   load(html: string): CheerioAPI;
   probe(url: string, options?: { request?: RequestConfig; detector?: BlockDetector }): Promise<ProbeResult>;
+  auto(url: string, options?: AutoOptions): Promise<AutoResult>;
 
   extract<T = Record<string, unknown>>(url: string, schema: Schema<T>, options?: ExtractOptions): Promise<ExtractResult<T>>;
   batch<T = Record<string, unknown>>(urls: string[], schema: Schema<T>, options?: BatchOptions): Promise<BatchResult<T>[]>;
@@ -1935,6 +2007,7 @@ export interface SengkrepStatic {
   submitForm(url: string, formSelector: string, overrides?: Record<string, unknown>): Promise<unknown>;
   inferSchema(url: string, options?: Record<string, unknown>): Promise<SchemaInferenceResult>;
   probe(url: string, options?: { request?: RequestConfig; detector?: BlockDetector }): Promise<ProbeResult>;
+  auto(url: string, options?: AutoOptions): Promise<AutoResult>;
 
   Sengkrep: typeof Sengkrep;
   Fingerprint: typeof Fingerprint;
@@ -1976,6 +2049,7 @@ export interface SengkrepStatic {
     CdpCapture: typeof CdpCapture;
     CdpSession: typeof CdpSession;
     CdpRenderer: typeof CdpRenderer;
+    Browser: typeof Browser;
     CaptureProxy: typeof CaptureProxy;
     PlaywrightCapture: typeof PlaywrightCapture;
     HarImporter: typeof HarImporter;
@@ -2035,6 +2109,8 @@ export interface SengkrepStatic {
   IdentityPool: typeof IdentityPool;
   jsonPath: typeof jsonPath;
   isJsonPath: typeof isJsonPath;
+  auto: typeof auto;
+  Browser: typeof Browser;
   Doctor: {
     (options?: DoctorOptions): Promise<DoctorReport>;
     MIN_NODE: string;

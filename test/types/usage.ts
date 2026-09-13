@@ -15,6 +15,8 @@ import type {
   CdpRenderResult,
   CookieJar,
   DoctorReport,
+  AutoResult,
+  Browser,
   Identity,
   IdentityPool,
   ProbeResult,
@@ -240,3 +242,24 @@ async function surviveBlocks(): Promise<ProbeResult> {
 }
 
 void surviveBlocks;
+
+async function zeroSchema(): Promise<AutoResult> {
+  const browser = new sengkrep.Browser({ viewport: { width: 1280, height: 720 } });
+  await browser.goto('https://example.com');
+  const html: string = await browser.html();
+  void html;
+  await browser.waitForSelector('h1', { timeout: 5000 });
+  await browser.click('button.more', { timeout: 2000 });
+  await browser.type('#q', 'query');
+  const shot: Buffer = await browser.screenshot({ fullPage: true });
+  void shot;
+  browser.close();
+
+  const result = await client.auto('https://example.com', { skipRepeating: false, maxText: 500 });
+  void result.item;
+  void result.items.length;
+  void result.sources;
+  return result;
+}
+
+void zeroSchema;

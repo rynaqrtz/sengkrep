@@ -18,6 +18,7 @@ const FILES = [
   '14-api-docs.js',
   '15-cli.js',
   '16-anti-block.js',
+  '17-browser-and-auto.js',
 ];
 
 let failed = 0;

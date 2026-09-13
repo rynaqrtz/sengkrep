@@ -4,7 +4,7 @@ const path = require('path');
 const dns = require('dns');
 const zlib = require('zlib');
 
-const MIN_NODE = '20.18.1';
+const MIN_NODE = '22.5.0';
 const SQLITE_NODE = '22.5.0';
 
 const OPTIONAL_DRIVERS = [

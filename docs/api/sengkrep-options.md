@@ -88,6 +88,7 @@ Category: Options · Source: [index.d.ts](../../index.d.ts) · [All exports](./R
 - [StorageOptions](./storage-options.md)
 - [ValidationRule](./validation-rule.md)
 - [WebhookOptions](./webhook-options.md)
+- [auto](./auto.md)
 
 ## Declaration
 

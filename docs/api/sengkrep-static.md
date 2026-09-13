@@ -43,7 +43,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 | `HarImporter` | `typeof HarImporter` | yes |  |
 | `CdpRenderer` | `typeof CdpRenderer` | yes |  |
 | `renderers` | `{ cdp: typeof createCdpRenderer; }` | yes |  |
-| `capture` | `{ NetworkCapture: typeof NetworkCapture; CdpCapture: typeof CdpCapture; CdpSession: typeof CdpSession; CdpRenderer: typeof CdpRenderer; CaptureProxy: typeof CaptureProxy; PlaywrightCapture: typeof PlaywrightCapture; HarImporter: typeof HarImporter; createCdpRenderer: typeof createCdpRenderer; renderers: { cdp: typeof createCdpRenderer; }; importCookies(jar: CookieJar, options?: CookieImportOptions): Promise<number>; parseCookieFile(text: string): CaptureCookie[]; DEFAULT_CDP_HOST: string; httpGetJson(url: string, options?: { timeout?: number }): Promise<unknown>; analyze: CaptureAnalyze; codegen: CaptureCodegen; cookies: CaptureCookies; entry: CaptureEntryModule; ws: CaptureWs; }` | yes |  |
+| `capture` | `{ NetworkCapture: typeof NetworkCapture; CdpCapture: typeof CdpCapture; CdpSession: typeof CdpSession; CdpRenderer: typeof CdpRenderer; Browser: typeof Browser; CaptureProxy: typeof CaptureProxy; PlaywrightCapture: typeof PlaywrightCapture; HarImporter: typeof HarImporter; createCdpRenderer: typeof createCdpRenderer; renderers: { cdp: typeof createCdpRenderer; }; importCookies(jar: CookieJar, options?: CookieImportOptions): Promise<number>; parseCookieFile(text: string): CaptureCookie[]; DEFAULT_CDP_HOST: string; httpGetJson(url: string, options?: { timeout?: number }): Promise<unknown>; analyze: CaptureAnalyze; codegen: CaptureCodegen; cookies: CaptureCookies; entry: CaptureEntryModule; ws: CaptureWs; }` | yes |  |
 | `WordPress` | `typeof WordPress` | yes |  |
 | `GraphQLClient` | `typeof GraphQLClient` | yes |  |
 | `DnsCache` | `typeof DnsCache` | yes |  |
@@ -76,6 +76,8 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 | `IdentityPool` | `typeof IdentityPool` | yes |  |
 | `jsonPath` | `typeof jsonPath` | yes |  |
 | `isJsonPath` | `typeof isJsonPath` | yes |  |
+| `auto` | `typeof auto` | yes |  |
+| `Browser` | `typeof Browser` | yes |  |
 | `Doctor` | `{ (options?: DoctorOptions): Promise<DoctorReport>; MIN_NODE: string; SQLITE_NODE: string; OPTIONAL_DRIVERS: DoctorDriver[]; compareVersions(left: string, right: string): number; }` | yes |  |
 | `Scheduler` | `typeof Scheduler` | yes |  |
 | `JobStore` | `typeof JobStore` | yes |  |
@@ -110,6 +112,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 | `submitForm` | `url: string, formSelector: string, overrides?: Record<string, unknown>` | `Promise<unknown>` |  |
 | `inferSchema` | `url: string, options?: Record<string, unknown>` | `Promise<SchemaInferenceResult>` |  |
 | `probe` | `url: string, options?: { request?: RequestConfig; detector?: BlockDetector }` | `Promise<ProbeResult>` |  |
+| `auto` | `url: string, options?: AutoOptions` | `Promise<AutoResult>` |  |
 | `captureHar` | `input: string \| HarLog, options?: Record<string, unknown>` | `NetworkCapture` |  |
 | `captureUrl` | `url: string, options?: CdpCaptureOptions` | `Promise<NetworkCapture>` |  |
 | `importCookies` | `jar: CookieJar, options?: CookieImportOptions` | `Promise<number>` |  |
@@ -144,10 +147,13 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 
 - [AdaptiveThrottle](./adaptive-throttle.md)
 - [AuthManager](./auth-manager.md)
+- [AutoOptions](./auto-options.md)
+- [AutoResult](./auto-result.md)
 - [BatchOptions](./batch-options.md)
 - [BatchResult](./batch-result.md)
 - [BlockDetector](./block-detector.md)
 - [BlockError](./block-error.md)
+- [Browser](./browser.md)
 - [Cache](./cache.md)
 - [CanceledError](./canceled-error.md)
 - [CaptureAnalyze](./capture-analyze.md)
@@ -242,6 +248,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 - [ValidationError](./validation-error.md)
 - [Webhook](./webhook.md)
 - [WordPress](./word-press.md)
+- [auto](./auto.md)
 - [createCdpRenderer](./create-cdp-renderer.md)
 - [createSink](./create-sink.md)
 - [createStorage](./create-storage.md)
