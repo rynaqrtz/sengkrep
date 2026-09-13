@@ -55,10 +55,11 @@ class SecurityGuard {
     this.allowDomains     = (options.allowDomains ?? null)?.map(globToRegExp) ?? null;
     this.blockDomains     = (options.blockDomains ?? []).map(globToRegExp);
     this.blockedPorts     = new Set(options.blockedPorts ?? [22, 23, 25, 3306, 5432, 6379, 27017]);
+    this._portsConfigured = options.blockedPorts !== undefined;
   }
 
   get enabled() {
-    return this.blockPrivateIPs || this.allowDomains !== null || this.blockDomains.length > 0;
+    return this.blockPrivateIPs || this.allowDomains !== null || this.blockDomains.length > 0 || (this._portsConfigured && this.blockedPorts.size > 0);
   }
 
   checkDomain(hostname) {
@@ -76,24 +77,29 @@ class SecurityGuard {
     }
   }
 
-  async checkAddress(hostname) {
-    if (!this.blockPrivateIPs) return;
-
-    let ip = hostname;
-    if (!net.isIP(hostname)) {
-      ip = await new Promise((resolve, reject) => {
-        dns.lookup(hostname, (err, address) => (err ? reject(err) : resolve(address)));
-      });
+  async resolve(hostname) {
+    if (net.isIP(hostname)) {
+      return { address: hostname, family: net.isIPv4(hostname) ? 4 : 6 };
     }
-
-    const label = classifyIP(ip);
-    if (label) {
-      throw new SecurityError(`Blocked private/internal address (${label}): ${hostname} -> ${ip}`);
-    }
+    const results = await new Promise((resolve, reject) => {
+      dns.lookup(hostname, { all: true }, (err, addresses) => (err ? reject(err) : resolve(addresses)));
+    });
+    if (!results || results.length === 0) throw new SecurityError(`Could not resolve host: ${hostname}`);
+    return { address: results[0].address, family: results[0].family };
   }
 
-  async check(url) {
-    if (!this.enabled) return true;
+  async checkAddress(hostname) {
+    if (!this.blockPrivateIPs) return null;
+    const resolved = await this.resolve(hostname);
+    const label = classifyIP(resolved.address);
+    if (label) {
+      throw new SecurityError(`Blocked private/internal address (${label}): ${hostname} -> ${resolved.address}`);
+    }
+    return resolved;
+  }
+
+  async resolveForRequest(url) {
+    if (!this.enabled) return null;
 
     let parsed;
     try {
@@ -104,8 +110,13 @@ class SecurityGuard {
 
     this.checkDomain(parsed.hostname);
     if (parsed.port) this.checkPort(parsed.port);
-    await this.checkAddress(parsed.hostname);
+    if (!this.blockPrivateIPs) return null;
 
+    return this.checkAddress(parsed.hostname);
+  }
+
+  async check(url) {
+    await this.resolveForRequest(url);
     return true;
   }
 }

@@ -17,7 +17,7 @@ class Logger {
   _log(level, ...args) {
     if (LEVELS[level] > this.level) return;
     const ts = new Date().toISOString();
-    const tag = `[${ts}] [RYNA:${level.toUpperCase()}]`;
+    const tag = `[${ts}] [SENGKREP:${level.toUpperCase()}]`;
     if (this.pretty) {
       process.stdout.write(`${COLORS[level]}${tag}${COLORS.reset} `);
       console.log(...args);

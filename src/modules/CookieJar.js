@@ -1,9 +1,12 @@
+const net = require('net');
+
 class CookieJar {
   constructor() {
     this._store = new Map();
   }
 
   _baseDomain(hostname) {
+    if (net.isIP(hostname)) return hostname;
     const parts = hostname.split('.');
     if (parts.length <= 2) return hostname;
     return parts.slice(-2).join('.');

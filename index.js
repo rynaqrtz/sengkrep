@@ -1,11 +1,12 @@
 const cheerio                              = require('cheerio');
-const Ryna                                 = require('./src/Ryna');
+const Sengkrep                                 = require('./src/Sengkrep');
 const { Fetcher, FetchError, TimeoutError, CanceledError } = require('./src/core/Fetcher');
 const { Http2Fetcher, Http2Error }         = require('./src/core/Http2Fetcher');
 const { Extractor, ExtractionError }       = require('./src/core/Extractor');
 const { JsonExtractor, JsonExtractionError } = require('./src/core/JsonExtractor');
 const Retry                                = require('./src/core/Retry');
 const { ProxyError }                       = require('./src/core/ProxyTunnel');
+const { Transport }                        = require('./src/core/Transport');
 const Fingerprint                          = require('./src/modules/Fingerprint');
 const HealthMonitor                        = require('./src/modules/HealthMonitor');
 const DiffDetector                         = require('./src/modules/DiffDetector');
@@ -27,6 +28,7 @@ const PluginSystem                         = require('./src/modules/PluginSystem
 const CrawlQueue                           = require('./src/modules/CrawlQueue');
 const Observability                        = require('./src/modules/Observability');
 const HarRecorder                          = require('./src/modules/HarRecorder');
+const capture                              = require('./src/capture');
 const WordPress                            = require('./src/modules/WordPress');
 const GraphQLClient                        = require('./src/modules/GraphQLClient');
 const DnsCache                             = require('./src/modules/DnsCache');
@@ -35,6 +37,10 @@ const ProgressBar                          = require('./src/modules/ProgressBar'
 const PaginationDetector                   = require('./src/modules/PaginationDetector');
 const { inferSchema, inferFields, detectRepeatingContainers } = require('./src/modules/SchemaInference');
 const { DistributedQueue, MemoryAdapter }  = require('./src/modules/DistributedQueue');
+const AdaptiveThrottle                     = require('./src/modules/AdaptiveThrottle');
+const ContentDedup                         = require('./src/modules/ContentDedup');
+const SqliteStorage                        = require('./src/modules/SqliteStorage');
+const Storage                              = require('./src/utils/storage');
 const builtinPlugins                       = require('./src/plugins');
 const { exportData, toCSV, toJSON, toNDJSON, toMarkdownTable } = require('./src/utils/exporter');
 const { parseFeed, parseCSV }              = require('./src/utils/contentHandlers');
@@ -45,13 +51,13 @@ const StreamWriter                         = require('./src/utils/streamWriter')
 const contentSafety                        = require('./src/utils/contentSafety');
 const encodingUtils                        = require('./src/utils/encodingUtils');
 
-const _default = new Ryna();
+const _default = new Sengkrep();
 
 async function sengkrep(url, schema, options = {}) {
   return _default.extract(url, schema, options);
 }
 
-sengkrep.create   = (options = {})                                => new Ryna(options);
+sengkrep.create   = (options = {})                                => new Sengkrep(options);
 sengkrep.fetch    = (url, options)                                 => _default.fetch(url, options);
 sengkrep.load     = (html)                                          => _default.load(html);
 sengkrep.extract  = (url, schema, options)                        => _default.extract(url, schema, options);
@@ -67,7 +73,7 @@ sengkrep.inferSchema = (url, options)                                  => _defau
 sengkrep.isAllowed = (url, userAgent)                                   => _default.isAllowed(url, userAgent);
 sengkrep.getCrawlDelay = (origin, userAgent)                             => _default.getCrawlDelay(origin, userAgent);
 
-sengkrep.Ryna             = Ryna;
+sengkrep.Sengkrep             = Sengkrep;
 sengkrep.Fingerprint      = Fingerprint;
 sengkrep.HealthMonitor    = HealthMonitor;
 sengkrep.DiffDetector     = DiffDetector;
@@ -94,6 +100,14 @@ sengkrep.PluginSystem     = PluginSystem;
 sengkrep.CrawlQueue       = CrawlQueue;
 sengkrep.Observability    = Observability;
 sengkrep.HarRecorder      = HarRecorder;
+sengkrep.capture          = capture;
+sengkrep.NetworkCapture   = capture.NetworkCapture;
+sengkrep.CdpCapture       = capture.CdpCapture;
+sengkrep.CaptureProxy     = capture.CaptureProxy;
+sengkrep.PlaywrightCapture = capture.PlaywrightCapture;
+sengkrep.HarImporter      = capture.HarImporter;
+sengkrep.captureHar       = (input, options) => capture.NetworkCapture.fromHar(input, options);
+sengkrep.captureUrl       = (url, options) => capture.NetworkCapture.fromCdp({ ...options, url });
 sengkrep.WordPress        = WordPress;
 sengkrep.GraphQLClient    = GraphQLClient;
 sengkrep.DnsCache         = DnsCache;
@@ -102,6 +116,13 @@ sengkrep.ProgressBar      = ProgressBar;
 sengkrep.PaginationDetector = PaginationDetector;
 sengkrep.DistributedQueue = DistributedQueue;
 sengkrep.MemoryAdapter    = MemoryAdapter;
+sengkrep.Transport        = Transport;
+sengkrep.AdaptiveThrottle = AdaptiveThrottle;
+sengkrep.ContentDedup     = ContentDedup;
+sengkrep.SqliteStorage    = SqliteStorage;
+sengkrep.Storage          = Storage;
+sengkrep.MemoryStorage    = Storage.MemoryStorage;
+sengkrep.createStorage    = Storage.createStorage;
 sengkrep.inferFields      = inferFields;
 sengkrep.detectRepeatingContainers = detectRepeatingContainers;
 sengkrep.UrlDeduplicator  = UrlDeduplicator;

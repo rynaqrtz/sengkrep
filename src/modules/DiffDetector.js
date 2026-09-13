@@ -1,10 +1,10 @@
-const Storage = require('../utils/storage');
+const { createStorage } = require('../utils/storage');
 
 const SEVERITY = { info: 0, warn: 1, critical: 2 };
 
 class DiffDetector {
   constructor(options = {}) {
-    this.storage     = new Storage(options.storageDir ?? '.sengkrep-ryna');
+    this.storage     = createStorage({ storage: options.backend, storageDir: options.storageDir ?? '.sengkrep', file: options.file, table: options.table });
     this.onDiff      = options.onDiff      ?? null;
     this.sensitivity = options.sensitivity ?? 'structural';
     this.maxHistory   = options.maxHistory  ?? 500;

@@ -18,6 +18,7 @@ class Retry {
     this.retryOnTimeout   = options.retryOnTimeout   ?? true;
     this.respectRetryAfter = options.respectRetryAfter ?? true;
     this.maxRetryAfter     = options.maxRetryAfter     ?? 5 * 60 * 1000;
+    this.budgetMs          = options.budgetMs          ?? null;
     this.onRetry          = options.onRetry          ?? null;
   }
 
@@ -49,6 +50,7 @@ class Retry {
   }
 
   async run(fn) {
+    const startedAt = Date.now();
     let attempt   = 0;
     let lastError = null;
 
@@ -63,8 +65,12 @@ class Retry {
 
         const { ms: wait, usedRetryAfter } = this._delay(err, attempt);
 
+        if (this.budgetMs !== null && (Date.now() - startedAt) + wait > this.budgetMs) {
+          throw err;
+        }
+
         if (this.onRetry) {
-          this.onRetry({ attempt, status: err.status, code: err.code, waitMs: wait, respectedRetryAfter: usedRetryAfter });
+          this.onRetry({ attempt, status: err.status, code: err.code, waitMs: wait, respectedRetryAfter: usedRetryAfter, elapsedMs: Date.now() - startedAt });
         }
 
         await new Promise(r => setTimeout(r, wait));

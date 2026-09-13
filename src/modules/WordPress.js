@@ -1,6 +1,6 @@
 class WordPress {
-  constructor(ryna) {
-    this.ryna = ryna;
+  constructor(client) {
+    this.client = client;
   }
 
   _clean(origin) {
@@ -10,7 +10,7 @@ class WordPress {
   async detect(origin) {
     const base = this._clean(origin);
     try {
-      const res = await this.ryna._fetch(`${base}/wp-json/`);
+      const res = await this.client._fetch(`${base}/wp-json/`);
       const body = JSON.parse(res.body);
       return {
         isWordPress: true,
@@ -30,7 +30,7 @@ class WordPress {
       url.searchParams.set(key, value);
     }
 
-    const res = await this.ryna._fetch(url.href);
+    const res = await this.client._fetch(url.href);
     const data = JSON.parse(res.body);
 
     return {
@@ -88,13 +88,13 @@ class WordPress {
     let nonce  = options.nonce ?? null;
 
     if (!nonce && options.nonceFromPage) {
-      const pageRes = await this.ryna._fetch(new URL(options.nonceFromPage, base).href);
+      const pageRes = await this.client._fetch(new URL(options.nonceFromPage, base).href);
       nonce = this.extractNonce(pageRes.body);
     }
 
     const body = new URLSearchParams({ action, ...data, ...(nonce ? { _ajax_nonce: nonce } : {}) });
 
-    const res = await this.ryna._fetch(`${base}/wp-admin/admin-ajax.php`, {
+    const res = await this.client._fetch(`${base}/wp-admin/admin-ajax.php`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body:    body.toString(),

@@ -1,7 +1,10 @@
 const { parseRateLimitHeaders }             = require('./utils/rateLimitHeaders');
 const { createHash }                       = require('crypto');
+const fs                                   = require('fs');
+const path                                 = require('path');
 const { Fetcher }                          = require('./core/Fetcher');
 const { Http2Fetcher }                     = require('./core/Http2Fetcher');
+const { Transport }                        = require('./core/Transport');
 const { Extractor }                        = require('./core/Extractor');
 const { JsonExtractor }                    = require('./core/JsonExtractor');
 const Retry                                = require('./core/Retry');
@@ -34,6 +37,8 @@ const ProgressBar                          = require('./modules/ProgressBar');
 const { detectNextLink, detectTotalPages }  = require('./modules/PaginationDetector');
 const { inferSchema }                       = require('./modules/SchemaInference');
 const { DistributedQueue, MemoryAdapter }   = require('./modules/DistributedQueue');
+const AdaptiveThrottle                     = require('./modules/AdaptiveThrottle');
+const ContentDedup                         = require('./modules/ContentDedup');
 const Logger                               = require('./utils/logger');
 const { exportData }                       = require('./utils/exporter');
 const { parseFeed, parseCSV }              = require('./utils/contentHandlers');
@@ -43,7 +48,7 @@ const { extractLinks, UrlDeduplicator }    = require('./utils/urlUtils');
 const StreamWriter                         = require('./utils/streamWriter');
 const contentSafety                        = require('./utils/contentSafety');
 
-class Ryna {
+class Sengkrep {
   constructor(options = {}) {
     this.options = options;
 
@@ -52,7 +57,17 @@ class Ryna {
       options.logPretty ?? true,
     );
 
-    this.fingerprint  = new Fingerprint(options.fingerprint ?? {});
+    this.compliance = options.compliance
+      ? (typeof options.compliance === 'object' ? options.compliance : {})
+      : null;
+
+    const fingerprintOptions = { ...(options.fingerprint ?? {}) };
+    if (this.compliance?.userAgent) {
+      fingerprintOptions.userAgent = this.compliance.userAgent;
+      fingerprintOptions.rotateUAOnEachRequest = false;
+    }
+
+    this.fingerprint  = new Fingerprint(fingerprintOptions);
     this.cookieJar    = options.cookies === false ? null : new CookieJar();
     this.interceptors = new Interceptors();
     this.plugins      = new PluginSystem();
@@ -112,6 +127,21 @@ class Ryna {
       ? new Http2Fetcher({ timeout: options.timeout ?? 30000, fingerprint: this.fingerprint, cookieJar: this.cookieJar })
       : null;
 
+    this.transport = new Transport({ fetcher: this.fetcher, http2: this.http2Fetcher, logger: this.logger });
+
+    this.adaptive = options.adaptive
+      ? new AdaptiveThrottle(typeof options.adaptive === 'object' ? options.adaptive : {})
+      : null;
+
+    this.contentDedup = options.dedupContent
+      ? new ContentDedup(typeof options.dedupContent === 'object' ? options.dedupContent : {})
+      : null;
+
+    this.renderer      = this._resolveRenderer(options.renderer);
+    this.renderEnabled = options.render === true;
+
+    this.transport.sweepStreamFiles(options.tempFileTtl ?? 3600000);
+
     this.retry = new Retry({
       ...(options.retry ?? {}),
       onRetry: (info) => {
@@ -135,7 +165,10 @@ class Ryna {
       ? new SchemaValidator(options.validate)
       : null;
 
-    this.discoverer = new Discover(this.fetcher);
+    this.discoverer = new Discover(
+      { fetch: (target, requestOptions) => this._fetch(target, requestOptions) },
+      { robotsTtl: options.robotsTtl },
+    );
     this.wordpress   = new WordPress(this);
     this.graphql     = new GraphQLClient(this);
 
@@ -189,20 +222,92 @@ class Ryna {
     return (res.headers['content-type'] ?? '').toLowerCase().includes('csv');
   }
 
+  async _doRequest(url, reqOptions, proxy) {
+    return this.transport.request(url, { ...reqOptions, proxy });
+  }
+
+  _resolveRenderer(renderer) {
+    if (!renderer) return null;
+    if (typeof renderer === 'function') return renderer;
+    if (typeof renderer.render === 'function') return (url, options) => renderer.render(url, options);
+    return null;
+  }
+
+  async _render(url, options) {
+    const output = await this.renderer(url, options);
+    if (typeof output === 'string') return output;
+    if (output && typeof output.html === 'string') return output.html;
+    throw new Error('Renderer must return an HTML string or an object with an html property');
+  }
+
+  async _renderResponse(url, options) {
+    const html = await this._render(url, options);
+    return {
+      status: 200,
+      headers: { 'content-type': 'text/html' },
+      url,
+      body: html,
+      binary: false,
+      streamed: false,
+      fromCache: false,
+      notModified: false,
+      requestSize: 0,
+      responseSize: Buffer.byteLength(html),
+      rendered: true,
+    };
+  }
+
+  _assertCompliance(result, url) {
+    if (!this.compliance?.respectXRobotsTag) return;
+    const tag = String(result.headers?.['x-robots-tag'] ?? '').toLowerCase();
+    if (tag.includes('none') || tag.includes('noindex')) {
+      const err = new Error(`Blocked by X-Robots-Tag "${tag}" at ${url}`);
+      err.code = 'X_ROBOTS_DISALLOWED';
+      throw err;
+    }
+  }
+
+  _audit(entry) {
+    if (!this.compliance?.auditLog) return;
+    try {
+      const dir = path.dirname(this.compliance.auditLog);
+      if (dir && dir !== '.' && !fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.appendFile(this.compliance.auditLog, `${JSON.stringify(entry)}\n`, () => {});
+    } catch {
+      return undefined;
+    }
+    return undefined;
+  }
+
+  _maskFields(result, fields) {
+    const apply = (target) => {
+      if (!target || typeof target !== 'object') return;
+      for (const field of fields) {
+        if (field in target) target[field] = '[redacted]';
+      }
+    };
+    if (Array.isArray(result)) result.forEach(apply);
+    else apply(result);
+  }
+
   async _fetch(url, reqOptions = {}) {
     let resolvedUrl = this._resolveUrl(url);
     if (reqOptions.params) resolvedUrl = this._applyParams(resolvedUrl, reqOptions.params);
 
-    await this.security.check(resolvedUrl);
+    const pinned = await this.security.resolveForRequest(resolvedUrl);
 
     const hostname = new URL(resolvedUrl).hostname;
     const method    = reqOptions.method ?? 'GET';
+    const pinnedLookup = pinned
+      ? (host, options, callback) => callback(null, pinned.address, pinned.family)
+      : null;
 
     if (this.circuitBreaker) this.circuitBreaker.assertCanRequest(hostname);
 
     if (this.cache) {
       const cached = this.cache.get(resolvedUrl, method);
       if (cached) {
+        this._assertCompliance(cached, resolvedUrl);
         this.logger.debug(`[cache] HIT ${resolvedUrl}`);
         return { ...cached, fromCache: true };
       }
@@ -213,8 +318,9 @@ class Ryna {
     let attemptedRefresh = false;
 
     const result = await this.retry.run(async (attempt) => {
-      const release = this.rateLimiter.enabled ? await this.rateLimiter.acquire(hostname) : null;
-      const proxy   = this.proxyRotator.enabled ? this.proxyRotator.next(hostname) : null;
+      const release         = this.rateLimiter.enabled ? await this.rateLimiter.acquire(hostname) : null;
+      const releaseAdaptive = this.adaptive ? await this.adaptive.acquire(hostname) : null;
+      const proxy           = this.proxyRotator.enabled ? this.proxyRotator.next(hostname) : null;
 
       try {
         if (attempt > 0) {
@@ -229,12 +335,12 @@ class Ryna {
 
         let res;
         try {
-          res = await this.fetcher.fetch(resolvedUrl, { ...reqOptions, headers: buildHeaders(), proxy });
+          res = await this._doRequest(resolvedUrl, { ...reqOptions, headers: buildHeaders(), lookup: pinnedLookup }, proxy);
         } catch (err) {
           if (err.status === 401 && this.auth.shouldRefresh(401) && !attemptedRefresh) {
             attemptedRefresh = true;
             await this.auth.refresh();
-            res = await this.fetcher.fetch(resolvedUrl, { ...reqOptions, headers: buildHeaders(), proxy });
+            res = await this._doRequest(resolvedUrl, { ...reqOptions, headers: buildHeaders(), lookup: pinnedLookup }, proxy);
           } else {
             throw err;
           }
@@ -242,14 +348,29 @@ class Ryna {
 
         if (proxy) this.proxyRotator.reportSuccess(proxy);
         if (this.circuitBreaker) this.circuitBreaker.recordSuccess(hostname);
+        if (this.adaptive) this.adaptive.onSuccess(hostname);
+        this.observability.trackBytes(res.requestSize ?? 0, res.responseSize ?? 0);
         return res;
       } catch (err) {
         if (proxy && err.code === 'PROXY_ERROR') this.proxyRotator.reportFailure(proxy);
         if (this.circuitBreaker && err.code !== 'CIRCUIT_OPEN') this.circuitBreaker.recordFailure(hostname);
+        if (this.adaptive && (err.status === 429 || err.status === 503 || err.code === 'TIMEOUT')) {
+          this.adaptive.onFailure(hostname, { retryAfterMs: err.retryAfterMs, status: err.status });
+        }
         throw err;
       } finally {
         if (release) release();
+        if (releaseAdaptive) releaseAdaptive();
       }
+    });
+
+    this._assertCompliance(result, resolvedUrl);
+    this._audit({
+      ts: new Date().toISOString(),
+      url: resolvedUrl,
+      method,
+      status: result.status,
+      purpose: this.compliance?.purpose ?? null,
     });
 
     if (this.incremental && !result.notModified) {
@@ -269,8 +390,10 @@ class Ryna {
       url               = mergedOptions.url;
       options           = mergedOptions.options;
 
-      const res = await this._fetch(url, { ...(options.request ?? {}), params: options.params });
-      this.logger.debug(`← ${res.status} ${url}${res.fromCache ? ' (cache)' : ''}`);
+      const res = (this.renderer && (options.render ?? this.renderEnabled))
+        ? await this._renderResponse(url, options)
+        : await this._fetch(url, { ...(options.request ?? {}), params: options.params });
+      this.logger.debug(`← ${res.status} ${url}${res.fromCache ? ' (cache)' : ''}${res.rendered ? ' (rendered)' : ''}`);
 
       if (res.notModified && this.incremental) {
         const snapshot = this.incremental.getSnapshot(url);
@@ -300,7 +423,7 @@ class Ryna {
           ? { binary: true, sniffedType: res.sniffedType, size: meta.size, buffer: options.includeBuffer ? res.bodyBuffer : undefined }
           : { streamed: true, filePath: res.filePath, size: meta.size };
 
-        Object.defineProperty(result, '_ryna', { value: meta, enumerable: false, writable: true });
+        Object.defineProperty(result, '_sengkrep', { value: meta, enumerable: false, writable: true });
         this.observability.recordSuccess(url);
         return result;
       }
@@ -335,6 +458,8 @@ class Ryna {
         responseType: parsedAs,
       };
 
+      if (res.rendered) meta.rendered = true;
+
       const rateLimitInfo = parseRateLimitHeaders(res.headers);
       if (rateLimitInfo) meta.rateLimit = rateLimitInfo;
 
@@ -362,11 +487,15 @@ class Ryna {
       }
 
       let result = Array.isArray(data) ? data : { ...data };
-      Object.defineProperty(result, '_ryna', { value: meta, enumerable: false, writable: true });
+      Object.defineProperty(result, '_sengkrep', { value: meta, enumerable: false, writable: true });
 
       const afterExtract = await this.plugins.run('afterExtract', { data: result, meta });
       result              = afterExtract.data;
-      Object.defineProperty(result, '_ryna', { value: afterExtract.meta, enumerable: false, writable: true });
+      Object.defineProperty(result, '_sengkrep', { value: afterExtract.meta, enumerable: false, writable: true });
+
+      if (this.compliance?.maskFields?.length) {
+        this._maskFields(result, this.compliance.maskFields);
+      }
 
       if (this.incremental && !res.notModified) {
         this.incremental.record(url, res.headers, result);
@@ -621,10 +750,21 @@ class Ryna {
       const { data } = this.extractor.extract(res.body, options.schema ?? {});
       let links = extractLinks($, url, options.linkOptions ?? {});
 
+      if (this.contentDedup) {
+        const check = this.contentDedup.check(res.body);
+        if (check.duplicate) {
+          const err = new Error(`Near-duplicate content detected for ${url} (distance ${check.distance})`);
+          err.code = 'DUPLICATE_CONTENT';
+          throw err;
+        }
+      }
+
       if (options.respectRobotsTxt) {
         const checks = await Promise.all(links.map(l => this.isAllowed(l, options.userAgent ?? '*')));
         links = links.filter((_, i) => checks[i]);
       }
+
+      links = this.deduplicator.filterNew(links);
 
       return { data, links };
     };
@@ -705,4 +845,4 @@ class Ryna {
   }
 }
 
-module.exports = Ryna;
+module.exports = Sengkrep;

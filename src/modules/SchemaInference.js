@@ -146,7 +146,7 @@ function detectRepeatingContainers($, root) {
 
 function inferSchema($, options = {}) {
   const hints     = options.hints ?? null;
-  const root       = options.root ?? $.root ?? 'body';
+  const root       = options.root ?? ($.root ? $.root().get(0) : 'body');
   const repeating = detectRepeatingContainers($, root);
 
   if (repeating.length > 0 && options.list !== false) {

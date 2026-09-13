@@ -53,8 +53,9 @@ function selectGroup(groups, userAgent) {
 }
 
 class Discover {
-  constructor(fetcher) {
-    this.fetcher     = fetcher;
+  constructor(fetcher, options = {}) {
+    this.fetcher      = fetcher;
+    this.robotsTtl    = options.robotsTtl ?? 3600000;
     this._robotsCache = new Map();
   }
 
@@ -85,14 +86,23 @@ class Discover {
   }
 
   async _getRobots(origin) {
-    if (this._robotsCache.has(origin)) return this._robotsCache.get(origin);
+    const cached = this._robotsCache.get(origin);
+    if (cached && Date.now() - cached.ts < this.robotsTtl) return cached.groups;
 
     const robotsUrl = `${origin.replace(/\/$/, '')}/robots.txt`;
     const text       = await this._fetchText(robotsUrl);
     const groups      = text ? parseRobotsRules(text) : [];
 
-    this._robotsCache.set(origin, groups);
+    this._robotsCache.set(origin, { groups, ts: Date.now() });
     return groups;
+  }
+
+  clearRobotsCache(origin) {
+    if (origin) {
+      this._robotsCache.delete(origin);
+    } else {
+      this._robotsCache.clear();
+    }
   }
 
   async isAllowed(url, userAgent = '*') {
@@ -189,3 +199,6 @@ class Discover {
 }
 
 module.exports = Discover;
+module.exports.parseRobotsRules = parseRobotsRules;
+module.exports.selectGroup = selectGroup;
+module.exports.patternToRegExp = patternToRegExp;

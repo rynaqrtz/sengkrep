@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { version } = require('../../package.json');
 
 class HarRecorder {
   constructor() {
@@ -55,7 +56,7 @@ class HarRecorder {
     return {
       log: {
         version: '1.2',
-        creator: { name: 'sengkrep-ryna', version: '3.0.0' },
+        creator: { name: 'sengkrep', version },
         entries: this.entries,
       },
     };

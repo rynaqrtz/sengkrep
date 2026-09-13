@@ -1,11 +1,11 @@
 {
-  "name": "sengkrep-ryna",
-  "version": "3.4.1",
-  "description": "A reliability layer for web scraping in Node.js: schema validation, selector health monitoring, adaptive retry, fingerprint randomization, diff detection, caching, session management, proxy rotation, HTTP/2, circuit breaker, resumable crawling, schema inference, distributed job queues, and full TypeScript definitions.",
+  "name": "sengkrep",
+  "version": "5.1.0",
+  "description": "A reliability layer for web scraping in Node.js: unified HTTP/1.1 + HTTP/2 transport, coherent browser fingerprints, adaptive throttling, schema validation, selector health monitoring, content dedup, circuit breaker, resumable crawling, distributed queues, pluggable storage, robots.txt compliance, network capture (DevTools Protocol, HAR, local proxy, Playwright), and full TypeScript definitions.",
   "main": "index.js",
   "types": "index.d.ts",
   "bin": {
-    "sengkrep-ryna": "./bin/sengkrep-ryna.js"
+    "sengkrep": "./bin/sengkrep.js"
   },
   "keywords": [
     "web-scraping",
@@ -28,19 +28,38 @@
     "circuit-breaker",
     "crawler",
     "distributed-queue",
+    "network-capture",
+    "har",
+    "devtools-protocol",
+    "cdp",
+    "api-discovery",
     "robots-txt",
     "charset",
     "json-ld",
-    "microdata"
+    "microdata",
+    "simhash",
+    "content-dedup",
+    "adaptive-throttling",
+    "prometheus",
+    "sqlite",
+    "compliance"
   ],
   "scripts": {
-    "test": "node test/01-fetcher-and-extraction.js && node test/02-orchestration.js && node test/03-reliability-modules.js && node test/04-content-safety-and-utils.js && node test/05-bugfixes-and-schema-inference.js && node test/06-robots-retry-pagination.js",
+    "test": "node test/run-all.js",
+    "coverage": "c8 --reporter=text --reporter=text-summary node test/run-all.js",
+    "typecheck": "tsc --noEmit",
+    "bench": "node bench/bench.js",
     "example": "node example.js"
   },
   "author": "qrtz",
   "license": "MIT",
   "dependencies": {
     "cheerio": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "c8": "^10.1.0",
+    "typescript": "^5.6.0"
   },
   "engines": {
     "node": ">=18.0.0"

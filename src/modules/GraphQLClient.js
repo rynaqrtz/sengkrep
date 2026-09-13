@@ -1,12 +1,12 @@
 const INTROSPECTION_QUERY = `query IntrospectionQuery { __schema { queryType { name } types { name kind fields { name type { name kind ofType { name kind } } } } } }`;
 
 class GraphQLClient {
-  constructor(ryna) {
-    this.ryna = ryna;
+  constructor(client) {
+    this.client = client;
   }
 
   async _post(endpoint, query, variables, headers) {
-    const res = await this.ryna._fetch(endpoint, {
+    const res = await this.client._fetch(endpoint, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
       body:    JSON.stringify({ query, variables }),

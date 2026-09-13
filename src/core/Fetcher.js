@@ -6,6 +6,7 @@ const os    = require('os');
 const path  = require('path');
 const { createHttpsAgent, routeHttpThroughProxy } = require('./ProxyTunnel');
 const contentSafety = require('../utils/contentSafety');
+const { version } = require('../../package.json');
 
 class FetchError extends Error {
   constructor(message, status, code) {
@@ -71,6 +72,33 @@ class Fetcher {
 
     this.httpAgent  = new http.Agent({ keepAlive: this.keepAlive, maxSockets: options.maxSockets ?? 50 });
     this.httpsAgent = new https.Agent({ keepAlive: this.keepAlive, maxSockets: options.maxSockets ?? 50 });
+    this.connectTimeout = options.connectTimeout ?? null;
+    this.totalTimeout   = options.totalTimeout   ?? null;
+    this._tempFiles     = new Set();
+  }
+
+  sweepStreamFiles(ttlMs = 3600000) {
+    let removed = 0;
+    try {
+      const now = Date.now();
+      for (const name of fs.readdirSync(this.streamDir)) {
+        if (!name.startsWith('sengkrep-stream-') || !name.endsWith('.tmp')) continue;
+        const full = path.join(this.streamDir, name);
+        try {
+          const stat = fs.statSync(full);
+          if (now - stat.mtimeMs > ttlMs) {
+            fs.unlinkSync(full);
+            this._tempFiles.delete(full);
+            removed += 1;
+          }
+        } catch {
+          continue;
+        }
+      }
+    } catch {
+      return 0;
+    }
+    return removed;
   }
 
   _consumeBody(res, config) {
@@ -116,7 +144,12 @@ class Fetcher {
       );
 
       res.on('aborted', () => {
-        if (verifyLength) finish(truncationError());
+        if (verifyLength) return finish(truncationError());
+        if (fileStream) {
+          fileStream.end(() => finish(null, { streamed: true, filePath, size: totalSize }));
+        } else {
+          finish(null, { streamed: false, buffer: Buffer.concat(chunks), size: totalSize });
+        }
       });
 
       source.on('data', (chunk) => {
@@ -133,8 +166,9 @@ class Fetcher {
         bufferedSize += chunk.length;
 
         if (bufferedSize > this.maxMemoryBuffer && config.bufferAll !== true) {
-          filePath   = path.join(this.streamDir, `ryna-stream-${Date.now()}-${Math.random().toString(36).slice(2)}.tmp`);
+          filePath   = path.join(this.streamDir, `sengkrep-stream-${Date.now()}-${Math.random().toString(36).slice(2)}.tmp`);
           fileStream = fs.createWriteStream(filePath);
+          this._tempFiles.add(filePath);
           for (const c of chunks) fileStream.write(c);
           chunks = [];
         }
@@ -178,7 +212,7 @@ class Fetcher {
 
       const headers = this.fingerprint
         ? this.fingerprint.buildHeaders(config.headers ?? {})
-        : { 'User-Agent': 'sengkrep-ryna/3.0.0', ...(config.headers ?? {}) };
+        : { 'User-Agent': `sengkrep/${version}`, ...(config.headers ?? {}) };
 
       if (this.cookieJar && !headers['Cookie']) {
         const cookieHeader = this.cookieJar.getCookieHeader(parsed.hostname);
@@ -207,7 +241,9 @@ class Fetcher {
         reqOptions.rejectUnauthorized = false;
       }
 
-      if (this.dnsCache) {
+      if (config.lookup) {
+        reqOptions.lookup = config.lookup;
+      } else if (this.dnsCache) {
         reqOptions.lookup = (hostname, opts, callback) => {
           this.dnsCache.lookup(hostname)
             .then((address) => callback(null, address, address.includes(':') ? 6 : 4))
@@ -216,17 +252,28 @@ class Fetcher {
       }
 
       let settled = false;
+      let connectTimer = null;
+      let totalTimer   = null;
       const finish = (fn, arg) => {
         if (settled) return;
         settled = true;
+        if (connectTimer) clearTimeout(connectTimer);
+        if (totalTimer) clearTimeout(totalTimer);
         fn(arg);
       };
 
       const requestSize = config.body ? Buffer.byteLength(config.body) : 0;
       let responseStarted = false;
 
+      const connectTimeout = config.connectTimeout ?? this.connectTimeout ?? config.timeout ?? this.timeout;
+      const totalTimeout   = config.totalTimeout   ?? this.totalTimeout;
+
       const req = lib.request(reqOptions, async (res) => {
         responseStarted = true;
+        if (connectTimer) {
+          clearTimeout(connectTimer);
+          connectTimer = null;
+        }
         const { statusCode, headers: resHeaders } = res;
 
         if (this.cookieJar && resHeaders['set-cookie']) {
@@ -295,6 +342,18 @@ class Fetcher {
         }
       });
 
+      connectTimer = setTimeout(() => {
+        req.destroy();
+        finish(reject, new TimeoutError('Connection timed out'));
+      }, connectTimeout);
+
+      if (totalTimeout) {
+        totalTimer = setTimeout(() => {
+          req.destroy();
+          finish(reject, new TimeoutError('Request deadline exceeded'));
+        }, totalTimeout);
+      }
+
       req.on('timeout', () => {
         req.destroy();
         finish(reject, new TimeoutError('Request timed out'));
@@ -337,6 +396,9 @@ class Fetcher {
       proxy:              options.proxy               ?? null,
       signal:             options.signal               ?? null,
       timeout:            options.timeout             ?? this.timeout,
+      connectTimeout:     options.connectTimeout      ?? this.connectTimeout ?? undefined,
+      totalTimeout:       options.totalTimeout        ?? this.totalTimeout   ?? undefined,
+      lookup:             options.lookup              ?? null,
       rejectUnauthorized: options.rejectUnauthorized   ?? undefined,
       bufferAll:          options.bufferAll            ?? false,
       verifyLength:       options.verifyLength         ?? true,

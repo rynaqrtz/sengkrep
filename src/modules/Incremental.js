@@ -1,8 +1,8 @@
-const Storage = require('../utils/storage');
+const { createStorage } = require('../utils/storage');
 
 class Incremental {
   constructor(options = {}) {
-    this.storage = new Storage(options.storageDir ?? '.sengkrep-ryna-incremental');
+    this.storage = createStorage({ storage: options.backend, storageDir: options.storageDir ?? '.sengkrep-incremental', file: options.file, table: options.table });
   }
 
   getConditionalHeaders(url) {

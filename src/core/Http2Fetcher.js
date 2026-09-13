@@ -1,6 +1,7 @@
 const http2 = require('http2');
 const zlib  = require('zlib');
 const contentSafety = require('../utils/contentSafety');
+const { version } = require('../../package.json');
 
 class Http2Error extends Error {
   constructor(message, code) {
@@ -8,6 +9,15 @@ class Http2Error extends Error {
     this.name = 'Http2Error';
     this.code = code ?? 'HTTP2_ERROR';
   }
+}
+
+function parseRetryAfter(headerValue) {
+  if (!headerValue) return null;
+  const seconds = Number(headerValue);
+  if (!isNaN(seconds)) return Math.max(0, seconds * 1000);
+  const dateMs = Date.parse(headerValue);
+  if (!isNaN(dateMs)) return Math.max(0, dateMs - Date.now());
+  return null;
 }
 
 function decompressBuffer(buffer, encoding) {
@@ -19,9 +29,19 @@ function decompressBuffer(buffer, encoding) {
     if (encoding === 'deflate') return zlib.inflate(buffer, done);
     if (encoding === 'zstd') {
       if (zlib.zstdDecompress) return zlib.zstdDecompress(buffer, done);
-      return reject(new Http2Error(`Content-Encoding "zstd" not supported by this Node runtime (needs 22.15+/23.8+)`, 'UNSUPPORTED_ENCODING'));
+      if (zlib.createZstdDecompress) {
+        const stream = zlib.createZstdDecompress();
+        const chunks = [];
+        stream.on('data', (chunk) => chunks.push(chunk));
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+        stream.on('error', (err) => reject(err));
+        stream.end(buffer);
+        return undefined;
+      }
+      return reject(new Http2Error('Content-Encoding "zstd" not supported by this Node runtime (needs 22.15+/23.8+)', 'UNSUPPORTED_ENCODING'));
     }
     reject(new Http2Error(`Unsupported Content-Encoding: "${encoding}"`, 'UNSUPPORTED_ENCODING'));
+    return undefined;
   });
 }
 
@@ -73,12 +93,12 @@ class Http2Fetcher {
 
       const headers = this.fingerprint
         ? this.fingerprint.buildHeaders(config.headers ?? {})
-        : { 'user-agent': 'sengkrep-ryna/3.0.0', ...(config.headers ?? {}) };
+        : { 'user-agent': `sengkrep/${version}`, ...(config.headers ?? {}) };
 
       delete headers['Connection'];
       delete headers['connection'];
 
-      if (this.cookieJar && !headers['cookie']) {
+      if (this.cookieJar && !headers['cookie'] && !headers['Cookie']) {
         const cookieHeader = this.cookieJar.getCookieHeader(parsed.hostname);
         if (cookieHeader) headers['cookie'] = cookieHeader;
       }
@@ -101,28 +121,56 @@ class Http2Fetcher {
         return reject(new Http2Error(`Request failed: ${err.message}`, 'REQUEST_FAILED'));
       }
 
+      const requestSize = config.body ? Buffer.byteLength(config.body) : 0;
+      const timeoutMs = config.timeout ?? this.timeout;
+
       let settled = false;
+      let timer = null;
+
       const finish = (fn, arg) => {
         if (settled) return;
         settled = true;
-        clearTimeout(timer);
+        if (timer) clearTimeout(timer);
+        if (config.signal) config.signal.removeEventListener('abort', onAbort);
         fn(arg);
       };
 
-      const timer = setTimeout(() => {
-        req.close(http2.constants.NGHTTP2_CANCEL);
+      function onAbort() {
+        try {
+          req.close(http2.constants.NGHTTP2_CANCEL);
+        } catch {
+          req.destroy();
+        }
+        finish(reject, new Http2Error('Request canceled', 'CANCELED'));
+      }
+
+      timer = setTimeout(() => {
+        try {
+          req.close(http2.constants.NGHTTP2_CANCEL);
+        } catch {
+          req.destroy();
+        }
         finish(reject, new Http2Error('Request timed out', 'TIMEOUT'));
-      }, config.timeout ?? this.timeout);
+      }, timeoutMs);
+
+      if (config.signal) {
+        if (config.signal.aborted) {
+          onAbort();
+          return undefined;
+        }
+        config.signal.addEventListener('abort', onAbort, { once: true });
+      }
 
       let responseHeaders = {};
       const chunks = [];
 
       req.on('response', (h) => { responseHeaders = h; });
-
       req.on('data', (chunk) => chunks.push(chunk));
 
       req.on('end', async () => {
+        if (settled) return;
         const status = parseInt(responseHeaders[':status'], 10);
+        const responseSize = chunks.reduce((total, chunk) => total + chunk.length, 0);
 
         if (this.cookieJar && responseHeaders['set-cookie']) {
           this.cookieJar.setFromHeaders(parsed.hostname, responseHeaders['set-cookie']);
@@ -137,22 +185,31 @@ class Http2Fetcher {
           }
         }
 
+        if (status === 304) {
+          return finish(resolve, {
+            status, headers: responseHeaders, url, body: '',
+            notModified: true, requestSize, responseSize, protocol: 'h2',
+          });
+        }
+
         if (status >= 400) {
           const err = new Http2Error(`HTTP ${status}`, 'HTTP_ERROR');
           err.status = status;
+          err.headers = responseHeaders;
+          err.retryAfterMs = parseRetryAfter(responseHeaders['retry-after']);
           return finish(reject, err);
         }
 
         try {
-          const raw     = Buffer.concat(chunks);
+          const raw = Buffer.concat(chunks);
           const decoded = await decompressBuffer(raw, responseHeaders['content-encoding']);
-          const safety  = contentSafety.inspect(decoded, responseHeaders['content-type']);
+          const safety = contentSafety.inspect(decoded, responseHeaders['content-type']);
 
           if (safety.isBinary) {
             return finish(resolve, {
               status, headers: responseHeaders, url,
               body: '', binary: true, bodyBuffer: decoded,
-              sniffedType: safety.sniffedType, protocol: 'h2',
+              sniffedType: safety.sniffedType, requestSize, responseSize, protocol: 'h2',
             });
           }
 
@@ -160,16 +217,24 @@ class Http2Fetcher {
             headerCharset: contentSafety.detectCharsetFromContentType(responseHeaders['content-type']),
           });
 
-          finish(resolve, { status, headers: responseHeaders, url, body: text.text, charset: text.charset, protocol: 'h2' });
+          finish(resolve, {
+            status, headers: responseHeaders, url,
+            body: text.text, charset: text.charset, requestSize, responseSize, protocol: 'h2',
+          });
         } catch (err) {
-          finish(reject, new Http2Error(`Decompress failed: ${err.message}`, 'DECOMPRESS_ERROR'));
+          finish(reject, new Http2Error(`Decompress failed: ${err.message}`, err.code ?? 'DECOMPRESS_ERROR'));
         }
+      });
+
+      req.on('aborted', () => {
+        finish(reject, new Http2Error('Response ended before it was complete', 'TRUNCATED_RESPONSE'));
       });
 
       req.on('error', (err) => finish(reject, new Http2Error(err.message, 'STREAM_ERROR')));
 
       if (config.body) req.write(config.body);
       req.end();
+      return undefined;
     });
   }
 
@@ -179,4 +244,4 @@ class Http2Fetcher {
   }
 }
 
-module.exports = { Http2Fetcher, Http2Error };
+module.exports = { Http2Fetcher, Http2Error, parseRetryAfter };

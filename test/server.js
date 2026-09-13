@@ -31,7 +31,7 @@ function handler(req, res) {
 
   if (url.pathname === '/html') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    return res.end('<html><body><h1 id="title">Hello Ryna</h1><span class="price">£12.99</span></body></html>');
+    return res.end('<html><body><h1 id="title">Hello Sengkrep</h1><span class="price">£12.99</span></body></html>');
   }
 
   if (url.pathname === '/json') {
@@ -256,7 +256,7 @@ function handler(req, res) {
 
   if (url.pathname === '/structured') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    return res.end('<html><body><script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Sepatu Ryna","offers":{"@type":"Offer","price":"250000"}}</script><div itemscope itemtype="https://schema.org/Person"><span itemprop="name">Budi</span><span itemprop="jobTitle">Developer</span></div><div data-product-id="42" data-in-stock="true">card</div></body></html>');
+    return res.end('<html><body><script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Sepatu Sengkrep","offers":{"@type":"Offer","price":"250000"}}</script><div itemscope itemtype="https://schema.org/Person"><span itemprop="name">Budi</span><span itemprop="jobTitle">Developer</span></div><div data-product-id="42" data-in-stock="true">card</div></body></html>');
   }
 
   if (url.pathname === '/binary-image') {
@@ -365,6 +365,11 @@ function handler(req, res) {
   if (url.pathname === '/public-page') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end('<h1>public</h1>');
+  }
+
+  if (url.pathname === '/robots-tag-none') {
+    res.writeHead(200, { 'Content-Type': 'text/html', 'X-Robots-Tag': 'none' });
+    return res.end('<html><body><h1>hidden</h1></body></html>');
   }
 
   if (url.pathname === '/rate-limited-api') {

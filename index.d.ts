@@ -79,9 +79,10 @@ export interface RateLimitInfo {
   resetSeconds: number | null;
 }
 
-export interface RynaMeta {
+export interface SengkrepMeta {
   responseType: 'html' | 'json' | 'feed' | 'csv' | 'binary' | 'streamed';
   cache?: { hit: boolean };
+  rendered?: boolean;
   health?: HealthReport;
   diff?: DiffReport;
   validation?: ValidationReport;
@@ -92,7 +93,7 @@ export interface RynaMeta {
 }
 
 export type ExtractResult<T = Record<string, unknown>> = T & {
-  readonly _ryna: RynaMeta;
+  readonly _sengkrep: SengkrepMeta;
 };
 
 export interface RawResponse {
@@ -125,6 +126,7 @@ export interface ExtractOptions {
   allowBinary?: boolean;
   allowStreamed?: boolean;
   includeBuffer?: boolean;
+  render?: boolean;
   request?: RequestConfig;
 }
 
@@ -192,6 +194,8 @@ export interface FingerprintOptions {
   rotateUAOnEachRequest?: boolean;
   randomizeHeaderOrder?: boolean;
   randomizeTiming?: boolean;
+  profile?: string | null;
+  language?: string | null;
 }
 
 export interface RetryOptions {
@@ -202,7 +206,8 @@ export interface RetryOptions {
   retryOnTimeout?: boolean;
   respectRetryAfter?: boolean;
   maxRetryAfter?: number;
-  onRetry?: (info: { attempt: number; status: number | null; code: string | null; waitMs: number; respectedRetryAfter: boolean }) => void;
+  budgetMs?: number | null;
+  onRetry?: (info: { attempt: number; status: number | null; code: string | null; waitMs: number; respectedRetryAfter: boolean; elapsedMs?: number }) => void;
 }
 
 export interface HealthOptions {
@@ -223,7 +228,48 @@ export interface CacheOptions {
   storage?: 'memory' | 'disk';
   storageDir?: string;
   maxItems?: number;
+  backend?: StorageBackend;
+  file?: string;
+  table?: string;
 }
+
+export type StorageBackend = 'file' | 'memory' | 'sqlite';
+
+export interface StorageOptions {
+  storage?: StorageBackend;
+  storageDir?: string;
+  file?: string;
+  table?: string;
+}
+
+export class Storage {
+  constructor(dir?: string);
+  set(key: string, value: unknown): boolean;
+  get(key: string): { ts: number; data: unknown } | null;
+  delete(key: string): void;
+  list(): string[];
+  clear(): boolean;
+}
+
+export class MemoryStorage {
+  set(key: string, value: unknown): boolean;
+  get(key: string): { ts: number; data: unknown } | null;
+  delete(key: string): void;
+  list(): string[];
+  clear(): boolean;
+}
+
+export class SqliteStorage {
+  constructor(options?: { file?: string; table?: string });
+  set(key: string, value: unknown): boolean;
+  get(key: string): { ts: number; data: unknown } | null;
+  delete(key: string): void;
+  list(): string[];
+  clear(): boolean;
+  close(): void;
+}
+
+export function createStorage(options?: StorageOptions): Storage | MemoryStorage | SqliteStorage;
 
 export interface RateLimitOptions {
   requestsPerSecond?: number | null;
@@ -235,6 +281,14 @@ export interface SecurityOptions {
   allowDomains?: string[] | null;
   blockDomains?: string[];
   blockedPorts?: number[];
+}
+
+export interface ComplianceOptions {
+  userAgent?: string;
+  respectXRobotsTag?: boolean;
+  maskFields?: string[];
+  auditLog?: string;
+  purpose?: string;
 }
 
 export interface CircuitBreakerOptions {
@@ -280,6 +334,21 @@ export interface WebhookOptions {
   onComplete?: string | null;
   onError?: string | null;
   onProgress?: string | null;
+  retries?: number;
+  backoffMs?: number;
+  timeout?: number;
+  secret?: string | null;
+  onDelivered?: (result: WebhookDeliveryResult) => void;
+}
+
+export interface WebhookDeliveryResult {
+  event: string;
+  url?: string;
+  delivered: boolean;
+  status?: number;
+  attempts?: number;
+  error?: Error | null;
+  skipped?: boolean;
 }
 
 export interface ValidationRule {
@@ -293,7 +362,7 @@ export interface ValidationRule {
   custom?: (value: unknown, allData: Record<string, unknown>) => true | string;
 }
 
-export interface RynaOptions {
+export interface SengkrepOptions {
   logLevel?: 'error' | 'warn' | 'info' | 'debug';
   logPretty?: boolean;
   baseURL?: string | null;
@@ -327,7 +396,22 @@ export interface RynaOptions {
   webhook?: WebhookOptions;
   har?: boolean;
   validate?: Record<string, ValidationRule>;
+  dedup?: Record<string, unknown>;
+  adaptive?: AdaptiveThrottleOptions | boolean;
+  dedupContent?: ContentDedupOptions | boolean;
+  compliance?: ComplianceOptions | false;
+  renderer?: RendererInput;
+  render?: boolean;
+  robotsTtl?: number;
+  tempFileTtl?: number;
+  connectTimeout?: number;
+  totalTimeout?: number;
+  storage?: StorageOptions;
 }
+
+export type RenderOutput = string | { html: string };
+export type RendererFn = (url: string, options?: ExtractOptions) => Promise<RenderOutput>;
+export type RendererInput = RendererFn | { render: RendererFn } | null;
 
 export class FetchError extends Error {
   status: number | null;
@@ -339,6 +423,28 @@ export class TimeoutError extends FetchError {}
 export class CanceledError extends FetchError {}
 export class ProxyError extends Error {
   code: string;
+}
+export class Http2Error extends Error {
+  code: string;
+  status?: number;
+  retryAfterMs?: number | null;
+}
+
+export class Retry {
+  constructor(options?: RetryOptions);
+  run<T>(fn: (attempt: number) => Promise<T>): Promise<T>;
+}
+
+export class Fetcher {
+  constructor(options?: Record<string, unknown>);
+  fetch<T = RawResponse>(url: string, options?: RequestConfig & Record<string, unknown>): Promise<T>;
+  sweepStreamFiles(ttlMs?: number): number;
+}
+
+export class Http2Fetcher {
+  constructor(options?: Record<string, unknown>);
+  fetch<T = RawResponse>(url: string, config?: RequestConfig): Promise<T>;
+  closeAll(): void;
 }
 export class ExtractionError extends Error {
   field: string;
@@ -360,11 +466,25 @@ export class CircuitOpenError extends Error {
   retryAt: number;
 }
 
+export interface BrowserProfile {
+  id: string;
+  browser: 'chrome' | 'edge' | 'firefox' | 'safari' | 'unknown';
+  platform: string;
+  platformVersion: string;
+  ua: string;
+}
+
 export class Fingerprint {
   constructor(options?: FingerprintOptions);
+  readonly profile: BrowserProfile;
+  setProfile(id: string): BrowserProfile;
   buildHeaders(extra?: Record<string, string>, context?: { referer?: string; targetUrl?: string } | null): Record<string, string>;
   getUA(): string;
+  delay(base?: number): Promise<void>;
   humanDelay(min?: number, max?: number): Promise<void>;
+  static PROFILES: BrowserProfile[];
+  static ACCEPT_ENCODING: string;
+  static ZSTD_SUPPORTED: boolean;
 }
 
 export class HealthMonitor {
@@ -414,6 +534,49 @@ export class RateLimiter {
   constructor(options?: RateLimitOptions);
   readonly enabled: boolean;
   acquire(hostname: string): Promise<() => void>;
+  reset(hostname?: string): void;
+}
+
+export interface AdaptiveThrottleOptions {
+  enabled?: boolean;
+  minConcurrency?: number;
+  maxConcurrency?: number;
+  initialConcurrency?: number;
+  increaseEvery?: number;
+  backoffFactor?: number;
+  baseDelay?: number;
+  maxDelay?: number;
+}
+
+export class AdaptiveThrottle {
+  constructor(options?: AdaptiveThrottleOptions);
+  acquire(hostname: string): Promise<() => void>;
+  onSuccess(hostname: string): void;
+  onFailure(hostname: string, info?: { retryAfterMs?: number | null; status?: number | null }): void;
+  concurrencyFor(hostname: string): number;
+  delayFor(hostname: string): number;
+  stats(): Array<{ hostname: string; concurrency: number; active: number; delay: number; backoffs: number }>;
+  reset(hostname?: string): void;
+}
+
+export interface ContentDedupOptions {
+  threshold?: number;
+  shingleSize?: number;
+  maxEntries?: number;
+}
+
+export class ContentDedup {
+  constructor(options?: ContentDedupOptions);
+  fingerprint(text: string): bigint;
+  add(text: string): bigint;
+  find(text: string): { fingerprint: bigint; distance: number | null };
+  isDuplicate(text: string): { duplicate: boolean; distance: number | null; fingerprint: bigint };
+  check(text: string, options?: { add?: boolean }): { duplicate: boolean; distance: number | null; fingerprint: bigint };
+  size(): number;
+  clear(): void;
+  static simhash(text: string, bits?: number, shingleSize?: number): bigint;
+  static hammingDistance(a: bigint, b: bigint): number;
+  static tokenize(text: string): string[];
 }
 
 export class ProxyRotator {
@@ -432,18 +595,34 @@ export class Interceptors {
 
 export class Webhook {
   constructor(config?: WebhookOptions);
-  fire(event: string, payload?: Record<string, unknown>): void;
+  results: WebhookDeliveryResult[];
+  sign(body: string): string | null;
+  fire(event: string, payload?: Record<string, unknown>): Promise<WebhookDeliveryResult>;
 }
 
 export class Discover {
-  discover(origin: string, options?: { maxDepth?: number; maxEntries?: number; pattern?: RegExp }): Promise<string[]>;
+  constructor(fetcher: unknown, options?: { robotsTtl?: number });
+  run(origin: string, options?: { maxDepth?: number; maxEntries?: number; pattern?: RegExp }): Promise<string[]>;
   isAllowed(url: string, userAgent?: string): Promise<boolean>;
   getCrawlDelay(origin: string, userAgent?: string): Promise<number | null>;
+  clearRobotsCache(origin?: string): void;
+}
+
+export class UrlDeduplicator {
+  constructor(options?: Record<string, unknown>);
+  isDuplicate(url: string): boolean;
+  markSeen(url: string): void;
+  filterNew(urls: string[]): string[];
+  size(): number;
+  clear(): void;
 }
 
 export class SecurityGuard {
   constructor(options?: SecurityOptions);
   readonly enabled: boolean;
+  resolve(hostname: string): Promise<{ address: string; family: number }>;
+  checkAddress(hostname: string): Promise<{ address: string; family: number } | null>;
+  resolveForRequest(url: string): Promise<{ address: string; family: number } | null>;
   check(url: string): Promise<boolean>;
 }
 
@@ -503,7 +682,7 @@ export class SessionPool {
 
 export interface PluginHooks {
   beforeRequest?: (payload: { url: string; options: ExtractOptions }) => unknown;
-  afterExtract?: (payload: { data: Record<string, unknown>; meta: RynaMeta }) => unknown;
+  afterExtract?: (payload: { data: Record<string, unknown>; meta: SengkrepMeta }) => unknown;
   onError?: (payload: { url: string; error: Error }) => unknown;
 }
 
@@ -540,7 +719,9 @@ export class Observability {
   constructor(options?: ObservabilityOptions);
   recordSuccess(url: string): void;
   recordFailure(url: string, err: Error): void;
+  trackBytes(sent: number, received: number): void;
   report(): ObservabilityReport;
+  prometheus(): string;
   close(): void;
 }
 
@@ -624,14 +805,291 @@ export interface DistributedQueueResult<T = unknown> {
 }
 
 export class DistributedQueue {
-  constructor(options?: { adapter?: DistributedAdapter; workerId?: string; pollInterval?: number; emptyRetries?: number; maxItemRetries?: number });
-  enqueue(items: unknown | unknown[]): Promise<void>;
+  constructor(options?: { adapter?: DistributedAdapter; workerId?: string; pollInterval?: number; emptyRetries?: number; maxItemRetries?: number; leaseTimeoutMs?: number });
+  deadLetter: Array<{ item: unknown; error: Error; attempts: number }>;
+  enqueue(items: unknown | unknown[], options?: { priority?: number }): Promise<void>;
   run<T = unknown>(visitFn: (item: unknown, workerId: string) => Promise<T>, options?: { concurrency?: number }): Promise<DistributedQueueResult<T>[]>;
+  deadLettered(): Array<{ item: unknown; error: Error; attempts: number }>;
   size(): Promise<Record<string, number>>;
 }
 
-export class Ryna {
-  constructor(options?: RynaOptions);
+export class Transport {
+  constructor(options: { fetcher: unknown; http2?: unknown; logger?: unknown; fallback?: boolean });
+  readonly supportsHttp2: boolean;
+  request<T = unknown>(url: string, config?: RequestConfig): Promise<T>;
+  sweepStreamFiles(ttlMs?: number): number;
+  close(): void;
+}
+
+export interface CaptureHeaders {
+  [name: string]: string;
+}
+
+export interface CaptureEntryInit {
+  id?: string;
+  source?: string;
+  method?: string;
+  url?: string;
+  status?: number;
+  statusText?: string;
+  httpVersion?: string;
+  resourceType?: string;
+  mimeType?: string;
+  requestHeaders?: CaptureHeaders | Array<{ name: string; value: string }>;
+  responseHeaders?: CaptureHeaders | Array<{ name: string; value: string }>;
+  requestBody?: string | Buffer | null;
+  responseBody?: string | Buffer | null;
+  requestSize?: number;
+  responseSize?: number;
+  startedDateTime?: string;
+  time?: number;
+  initiator?: string | null;
+  fromCache?: boolean;
+  failed?: boolean;
+  errorText?: string | null;
+  redirectURL?: string | null;
+  bodyBase64?: boolean;
+}
+
+export interface CaptureEntry {
+  id: string;
+  source: string;
+  method: string;
+  url: string;
+  status: number;
+  statusText: string;
+  httpVersion: string;
+  resourceType: string;
+  mimeType: string;
+  requestHeaders: CaptureHeaders;
+  responseHeaders: CaptureHeaders;
+  requestBody: string | null;
+  responseBody: string | null;
+  requestSize: number;
+  responseSize: number;
+  startedDateTime: string;
+  time: number;
+  initiator: string | null;
+  fromCache: boolean;
+  failed: boolean;
+  errorText: string | null;
+  redirectURL: string | null;
+  bodyBase64: boolean;
+  done?: boolean;
+  truncated?: boolean;
+}
+
+export interface CaptureJsonSchema {
+  type: string;
+  properties?: Record<string, CaptureJsonSchema>;
+  required?: string[];
+  items?: CaptureJsonSchema;
+}
+
+export interface CaptureEndpoint {
+  method: string;
+  template: string;
+  path: string;
+  host: string;
+  api: boolean;
+  count: number;
+  statuses: Record<string, number>;
+  params: string[];
+  mimeTypes: string[];
+  sources: string[];
+  resourceTypes: string[];
+  averageTime: number;
+  sampleIds: string[];
+  schema: CaptureJsonSchema | null;
+  sample?: string;
+}
+
+export interface CaptureSummary {
+  total: number;
+  byResourceType: Record<string, number>;
+  byStatus: Record<string, number>;
+  bySource: Record<string, number>;
+  failed: number;
+  truncated: number;
+}
+
+export interface CaptureFilter {
+  method?: string;
+  type?: string;
+  status?: number | string;
+  host?: string;
+  url?: string | RegExp;
+  body?: string | RegExp;
+  since?: string | number | Date;
+  api?: boolean;
+  failed?: boolean;
+}
+
+export interface CaptureEndpointOptions {
+  all?: boolean;
+  schema?: boolean;
+  bodies?: boolean;
+  maxSample?: number;
+}
+
+export interface HarLog {
+  log: {
+    version: string;
+    creator: { name: string; version: string };
+    pages?: unknown[];
+    entries: unknown[];
+  };
+}
+
+export class NetworkCapture {
+  constructor(options?: { source?: string; includeStatic?: boolean });
+  source: string;
+  entries: CaptureEntry[];
+  meta: Record<string, unknown>;
+  readonly size: number;
+  static fromHar(input: string | HarLog, options?: Record<string, unknown>): NetworkCapture;
+  static fromCdp(options: CdpCaptureOptions & { url: string }): Promise<NetworkCapture>;
+  static fromProxy(options?: CaptureProxyOptions): Promise<{ capture: NetworkCapture; proxy: CaptureProxy }>;
+  static fromPlaywright(url: string, options?: PlaywrightCaptureOptions): Promise<NetworkCapture>;
+  static run(options?: Record<string, unknown>): Promise<NetworkCapture>;
+  add(input: CaptureEntryInit | CaptureEntryInit[]): this;
+  pull(source: { entries: CaptureEntry[] } | CaptureEntry[]): number;
+  filter(criteria?: CaptureFilter | ((entry: CaptureEntry) => boolean)): NetworkCapture;
+  api(): NetworkCapture;
+  find(target: string | ((entry: CaptureEntry) => boolean)): CaptureEntry | null;
+  summary(): CaptureSummary;
+  endpoints(options?: CaptureEndpointOptions): CaptureEndpoint[];
+  schemas(options?: CaptureEndpointOptions): Record<string, CaptureJsonSchema>;
+  toHAR(options?: { redact?: boolean; creator?: string }): HarLog;
+  saveHar(filePath: string, options?: { redact?: boolean }): string;
+  toFetchCode(target: string | CaptureEntry, options?: { redact?: boolean }): string;
+  toCurl(target: string | CaptureEntry, options?: { redact?: boolean }): string;
+  json(options?: CaptureEndpointOptions): { source: string; meta: Record<string, unknown>; summary: CaptureSummary; endpoints: CaptureEndpoint[] };
+  toJSON(options?: CaptureEndpointOptions): { source: string; meta: Record<string, unknown>; summary: CaptureSummary; endpoints: CaptureEndpoint[] };
+  clear(): this;
+}
+
+export interface CdpClient {
+  on(event: string, handler: (payload: unknown) => void): void;
+  send(payload: unknown): void;
+  close(): void;
+}
+
+export interface CdpCaptureOptions {
+  url?: string;
+  host?: string;
+  debuggerUrl?: string | null;
+  timeout?: number;
+  idleMs?: number;
+  maxEntries?: number;
+  maxBodyBytes?: number;
+  bodies?: boolean;
+  readAllBodies?: boolean;
+  connect?: (url: string, options?: { timeout?: number }) => Promise<CdpClient>;
+  discover?: (options?: CdpCaptureOptions) => Promise<{ webSocketDebuggerUrl: string }>;
+}
+
+export interface CdpCaptureResult {
+  entries: CaptureEntry[];
+  url: string;
+  title: string | null;
+  session: { targetId: string; browser: string | null };
+}
+
+export interface CdpTargetDescription {
+  id: string;
+  type: string;
+  title: string;
+  url: string;
+  webSocketDebuggerUrl?: string;
+}
+
+export class CdpSession {
+  constructor(client: CdpClient, options?: { timeout?: number });
+  readonly closed: boolean;
+  on(method: string, handler: (params: Record<string, unknown>, sessionId: string) => void, sessionId?: string): this;
+  once(method: string, handler: (params: Record<string, unknown>, sessionId: string) => void, sessionId?: string): this;
+  send<T = Record<string, unknown>>(method: string, params?: Record<string, unknown>, sessionId?: string): Promise<T>;
+  close(): void;
+}
+
+export class CdpCapture {
+  constructor(options?: CdpCaptureOptions);
+  host: string;
+  timeout: number;
+  static version(host?: string, options?: { timeout?: number }): Promise<Record<string, unknown>>;
+  static targets(host?: string, options?: { timeout?: number }): Promise<CdpTargetDescription[]>;
+  static discover(host?: string, options?: { timeout?: number }): Promise<{ webSocketDebuggerUrl: string; Browser?: string; [key: string]: unknown }>;
+  static captureUrl(url: string, options?: CdpCaptureOptions): Promise<CdpCaptureResult>;
+  open(options?: CdpCaptureOptions): Promise<{ targetId: string; sessionId: string; browser: Record<string, unknown> }>;
+  capture(options: CdpCaptureOptions & { url: string }): Promise<CdpCaptureResult>;
+  fetchBodies(session: CdpSession, sessionId: string, records: unknown[], options?: CdpCaptureOptions): Promise<unknown[]>;
+}
+
+export interface CaptureProxyOptions {
+  host?: string;
+  port?: number;
+  maxBodyBytes?: number;
+  captureTunnels?: boolean;
+  onEntry?: (entry: CaptureEntry) => void;
+}
+
+export interface CaptureProxyAddress {
+  host: string;
+  port: number;
+  url: string;
+}
+
+export class CaptureProxy {
+  constructor(options?: CaptureProxyOptions);
+  entries: CaptureEntry[];
+  address: CaptureProxyAddress | null;
+  server: unknown;
+  requestCount: number;
+  tunnelCount: number;
+  start(): Promise<CaptureProxyAddress>;
+  stop(): Promise<number>;
+  captured(): CaptureEntry[];
+}
+
+export interface PlaywrightCaptureOptions {
+  module?: unknown;
+  moduleName?: string;
+  bodies?: boolean;
+  headless?: boolean;
+  args?: string[];
+  context?: Record<string, unknown>;
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
+  timeout?: number;
+  html?: boolean;
+  browserType?: unknown;
+}
+
+export interface PlaywrightAttachment {
+  entries: CaptureEntry[];
+  stop(): void;
+}
+
+export class PlaywrightCapture {
+  constructor(options?: PlaywrightCaptureOptions);
+  resolve(): unknown;
+  attach(page: { on: (event: string, handler: (...args: never[]) => void) => void; off?: (event: string, handler: (...args: never[]) => void) => void }, options?: PlaywrightCaptureOptions): PlaywrightAttachment;
+  capture(url: string, options?: PlaywrightCaptureOptions): Promise<{ entries: CaptureEntry[]; title: string; html: string | null; url: string }>;
+}
+
+export const HarImporter: {
+  isHar(value: unknown): boolean;
+  parseHar(input: string | HarLog, options?: { maxEntries?: number; source?: string }): CaptureEntry[];
+  importHarFile(filePath: string, options?: { maxEntries?: number; source?: string }): CaptureEntry[];
+  entryFromHar(harEntry: unknown, options?: { source?: string; resourceType?: string }): CaptureEntry;
+  createEntryFromHar(harEntry: unknown, options?: { source?: string; resourceType?: string }): CaptureEntry;
+  entryToHar(entry: CaptureEntry, options?: { redact?: boolean }): Record<string, unknown>;
+  toHar(entries: CaptureEntry[], options?: { redact?: boolean; creator?: string; pages?: unknown[] }): HarLog;
+  saveHar(entries: CaptureEntry[], filePath: string, options?: { redact?: boolean; creator?: string }): string;
+};
+
+export class Sengkrep {
+  constructor(options?: SengkrepOptions);
 
   fingerprint: Fingerprint;
   cookieJar: CookieJar | null;
@@ -653,7 +1111,7 @@ export class Ryna {
   observability: Observability;
   dnsCache: DnsCache | null;
   formHandler: FormHandler;
-  deduplicator: unknown;
+  deduplicator: UrlDeduplicator;
   health: HealthMonitor | null;
   healthMonitor: HealthMonitor | null;
   diff: DiffDetector | null;
@@ -661,6 +1119,12 @@ export class Ryna {
   validator: SchemaValidator | null;
   wordpress: WordPress;
   graphql: GraphQLClient;
+  transport: Transport;
+  adaptive: AdaptiveThrottle | null;
+  contentDedup: ContentDedup | null;
+  compliance: ComplianceOptions | null;
+  renderer: RendererFn | null;
+  renderEnabled: boolean;
 
   fetch(url: string, options?: { params?: Record<string, unknown>; request?: RequestConfig }): Promise<RawResponse>;
   load(html: string): CheerioAPI;
@@ -693,7 +1157,7 @@ export class Ryna {
 export interface SengkrepStatic {
   <T = Record<string, unknown>>(url: string, schema: Schema<T>, options?: ExtractOptions): Promise<ExtractResult<T>>;
 
-  create(options?: RynaOptions): Ryna;
+  create(options?: SengkrepOptions): Sengkrep;
   fetch(url: string, options?: { params?: Record<string, unknown>; request?: RequestConfig }): Promise<RawResponse>;
   load(html: string): CheerioAPI;
   extract<T = Record<string, unknown>>(url: string, schema: Schema<T>, options?: ExtractOptions): Promise<ExtractResult<T>>;
@@ -709,7 +1173,7 @@ export interface SengkrepStatic {
   submitForm(url: string, formSelector: string, overrides?: Record<string, unknown>): Promise<unknown>;
   inferSchema(url: string, options?: Record<string, unknown>): Promise<SchemaInferenceResult>;
 
-  Ryna: typeof Ryna;
+  Sengkrep: typeof Sengkrep;
   Fingerprint: typeof Fingerprint;
   HealthMonitor: typeof HealthMonitor;
   DiffDetector: typeof DiffDetector;
@@ -731,6 +1195,26 @@ export interface SengkrepStatic {
   CrawlQueue: typeof CrawlQueue;
   Observability: typeof Observability;
   HarRecorder: typeof HarRecorder;
+  NetworkCapture: typeof NetworkCapture;
+  CdpCapture: typeof CdpCapture;
+  CaptureProxy: typeof CaptureProxy;
+  PlaywrightCapture: typeof PlaywrightCapture;
+  HarImporter: typeof HarImporter;
+  captureHar(input: string | HarLog, options?: Record<string, unknown>): NetworkCapture;
+  captureUrl(url: string, options?: CdpCaptureOptions): Promise<NetworkCapture>;
+  capture: {
+    NetworkCapture: typeof NetworkCapture;
+    CdpCapture: typeof CdpCapture;
+    CdpSession: typeof CdpSession;
+    CaptureProxy: typeof CaptureProxy;
+    PlaywrightCapture: typeof PlaywrightCapture;
+    HarImporter: typeof HarImporter;
+    DEFAULT_CDP_HOST: string;
+    httpGetJson(url: string, options?: { timeout?: number }): Promise<unknown>;
+    analyze: Record<string, (...args: never[]) => unknown>;
+    entry: Record<string, unknown>;
+    ws: Record<string, unknown>;
+  };
   WordPress: typeof WordPress;
   GraphQLClient: typeof GraphQLClient;
   DnsCache: typeof DnsCache;
@@ -740,6 +1224,17 @@ export interface SengkrepStatic {
   DistributedQueue: typeof DistributedQueue;
   MemoryAdapter: typeof MemoryAdapter;
   StreamWriter: typeof StreamWriter;
+  UrlDeduplicator: typeof UrlDeduplicator;
+  Retry: typeof Retry;
+  Fetcher: typeof Fetcher;
+  Http2Fetcher: typeof Http2Fetcher;
+  Transport: typeof Transport;
+  AdaptiveThrottle: typeof AdaptiveThrottle;
+  ContentDedup: typeof ContentDedup;
+  SqliteStorage: typeof SqliteStorage;
+  Storage: typeof Storage;
+  MemoryStorage: typeof MemoryStorage;
+  createStorage: typeof createStorage;
 
   cheerio: { load: (html: string) => CheerioAPI };
   plugins: {
@@ -785,6 +1280,7 @@ export interface SengkrepStatic {
     TimeoutError: typeof TimeoutError;
     CanceledError: typeof CanceledError;
     ProxyError: typeof ProxyError;
+    Http2Error: typeof Http2Error;
     ExtractionError: typeof ExtractionError;
     JsonExtractionError: typeof JsonExtractionError;
     ValidationError: typeof ValidationError;

@@ -82,8 +82,47 @@ class Observability {
     };
   }
 
+  prometheus() {
+    const r = this.report();
+    const lines = [
+      '# HELP sengkrep_requests_total Total requests observed',
+      '# TYPE sengkrep_requests_total counter',
+      `sengkrep_requests_total ${r.total}`,
+      '# HELP sengkrep_requests_success_total Successful requests',
+      '# TYPE sengkrep_requests_success_total counter',
+      `sengkrep_requests_success_total ${r.success}`,
+      '# HELP sengkrep_requests_failed_total Failed requests',
+      '# TYPE sengkrep_requests_failed_total counter',
+      `sengkrep_requests_failed_total ${r.failed}`,
+      '# HELP sengkrep_success_rate_percent Success rate percentage',
+      '# TYPE sengkrep_success_rate_percent gauge',
+      `sengkrep_success_rate_percent ${r.successRate}`,
+      '# HELP sengkrep_requests_per_second Requests per second',
+      '# TYPE sengkrep_requests_per_second gauge',
+      `sengkrep_requests_per_second ${r.rps}`,
+      '# HELP sengkrep_bytes_total Bytes transferred',
+      '# TYPE sengkrep_bytes_total counter',
+      `sengkrep_bytes_total{dir="sent"} ${r.bytes.sent}`,
+      `sengkrep_bytes_total{dir="received"} ${r.bytes.received}`,
+    ];
+
+    for (const [category, count] of Object.entries(r.categories)) {
+      lines.push(`sengkrep_errors_total{category="${category}"} ${count}`);
+    }
+    for (const [domain, stats] of Object.entries(r.domains)) {
+      lines.push(`sengkrep_domain_requests_total{domain="${domain}"} ${stats.requests}`);
+    }
+
+    return `${lines.join('\n')}\n`;
+  }
+
   _startServer() {
     this._server = http.createServer((req, res) => {
+      if (req.url === '/metrics') {
+        res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
+        return res.end(this.prometheus());
+      }
+
       if (req.url === '/api/stats') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify(this.report(), null, 2));
@@ -91,9 +130,9 @@ class Observability {
 
       const r = this.report();
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(`<!DOCTYPE html><html><head><title>sengkrep-ryna</title><meta http-equiv="refresh" content="3"></head>
+      res.end(`<!DOCTYPE html><html><head><title>sengkrep</title><meta http-equiv="refresh" content="3"></head>
 <body style="font-family:monospace;background:#0a0a0a;color:#e5e5e5;padding:2rem">
-<h1>sengkrep-ryna observability</h1>
+<h1>sengkrep observability</h1>
 <p>total: ${r.total} | success: ${r.success} | failed: ${r.failed} | rate: ${r.successRate}% | rps: ${r.rps}</p>
 <pre>${JSON.stringify(r.domains, null, 2)}</pre>
 </body></html>`);
