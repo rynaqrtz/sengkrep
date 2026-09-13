@@ -1,3 +1,5 @@
+const { query: queryJsonPath, isJsonPath, hasWildcard: jsonPathHasWildcard } = require('../utils/jsonpath');
+
 class JsonExtractionError extends Error {
   constructor(message, field, path) {
     super(message);
@@ -67,11 +69,12 @@ class JsonExtractor {
     const out = {};
     for (const [key, val] of Object.entries(schema)) {
       if (typeof val === 'string') {
-        out[key] = { path: val, required: false, transform: null, default: null, pattern: null };
+        out[key] = { path: val, jsonpath: isJsonPath(val), required: false, transform: null, default: null, pattern: null };
         continue;
       }
       out[key] = {
-        path:      val.path,
+        path:      val.jsonpath ?? val.path,
+        jsonpath:  Boolean(val.jsonpath) || isJsonPath(val.path),
         required:  val.required  ?? false,
         transform: val.transform ?? null,
         default:   val.default   ?? null,
@@ -100,10 +103,21 @@ class JsonExtractor {
       let usedPath      = null;
       let wildcardUsed   = false;
 
+      const useJsonPath = def.jsonpath === true;
+
       for (const path of paths) {
-        const tokens   = tokenize(path);
-        const wildcard = hasWildcard(tokens);
-        const resolved = resolvePath(root, tokens);
+        let wildcard;
+        let resolved;
+
+        if (useJsonPath || isJsonPath(path)) {
+          const expression = path;
+          wildcard = jsonPathHasWildcard(expression);
+          resolved = queryJsonPath(root, expression);
+        } else {
+          const tokens = tokenize(path);
+          wildcard = hasWildcard(tokens);
+          resolved = resolvePath(root, tokens);
+        }
 
         let candidate = wildcard ? resolved.filter(v => v !== undefined) : resolved[0];
         if (candidate === undefined) candidate = null;

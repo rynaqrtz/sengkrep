@@ -99,6 +99,7 @@ class Fingerprint {
       ...options,
     };
     this._index = 0;
+    this._identity = options.identity ?? null;
     this._current = this._select();
   }
 
@@ -130,6 +131,30 @@ class Fingerprint {
     return this._current;
   }
 
+  get identity() {
+    return this._identity;
+  }
+
+  setIdentity(identity) {
+    this._identity = identity ?? null;
+    if (!identity) {
+      this._current = this._select();
+      return null;
+    }
+
+    const match = PROFILES.find((candidate) => candidate.ua === identity.userAgent);
+    this._current = match ?? {
+      id: identity.label ?? identity.id ?? 'identity',
+      browser: identity.browser ?? 'unknown',
+      platform: identity.platform ? `"${identity.platform}"` : '""',
+      platformVersion: '"15.0.0"',
+      ua: identity.userAgent ?? this._current.ua,
+    };
+    if (identity.locale) this.options.language = null;
+
+    return this._current;
+  }
+
   setProfile(id) {
     const next = PROFILES.find((p) => p.id === id);
     if (!next) throw new Error(`Unknown fingerprint profile: "${id}". Available: ${PROFILES.map((p) => p.id).join(', ')}`);
@@ -138,6 +163,7 @@ class Fingerprint {
   }
 
   getUA() {
+    if (this._identity?.userAgent) return this._identity.userAgent;
     if (this.options.rotateUAOnEachRequest) this._current = this._select();
     return this._current.ua;
   }
@@ -173,10 +199,12 @@ class Fingerprint {
   }
 
   buildHeaders(extra = {}, context = null) {
-    if (this.options.rotateUAOnEachRequest) this._current = this._select();
+    if (this.options.rotateUAOnEachRequest && !this._identity) this._current = this._select();
     const profile = this._current;
-    const ua = profile.ua;
-    const lang = this.options.language ?? this._pick(ACCEPT_LANGUAGES);
+    const ua = this._identity?.userAgent ?? profile.ua;
+    const lang = this._identity?.locale
+      ? `${this._identity.locale},${this._identity.locale.split('-')[0]};q=0.9,en;q=0.8`
+      : (this.options.language ?? this._pick(ACCEPT_LANGUAGES));
     const site = this._secFetchSite(context);
     const method = String(context?.method ?? 'GET').toUpperCase();
     const kind = this._requestKind(extra, method);
@@ -259,5 +287,7 @@ class Fingerprint {
 Fingerprint.PROFILES = PROFILES;
 Fingerprint.ACCEPT_ENCODING = ACCEPT_ENCODING;
 Fingerprint.ZSTD_SUPPORTED = ZSTD_SUPPORTED;
+Fingerprint.clientHintBrands = clientHintBrands;
+Fingerprint.majorVersion = majorVersion;
 
 module.exports = Fingerprint;

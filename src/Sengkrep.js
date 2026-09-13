@@ -2,7 +2,7 @@ const { parseRateLimitHeaders }             = require('./utils/rateLimitHeaders'
 const { createHash }                       = require('crypto');
 const fs                                   = require('fs');
 const path                                 = require('path');
-const { Fetcher }                          = require('./core/Fetcher');
+const { Fetcher, FetchError, parseRetryAfter } = require('./core/Fetcher');
 const { Http2Fetcher }                     = require('./core/Http2Fetcher');
 const { Transport }                        = require('./core/Transport');
 const { Extractor }                        = require('./core/Extractor');
@@ -39,6 +39,8 @@ const { inferSchema }                       = require('./modules/SchemaInference
 const { DistributedQueue, MemoryAdapter }   = require('./modules/DistributedQueue');
 const AdaptiveThrottle                     = require('./modules/AdaptiveThrottle');
 const SingleFlight                         = require('./modules/SingleFlight');
+const { BlockDetector, BlockError }        = require('./modules/BlockDetector');
+const { Identity, IdentityPool }            = require('./modules/Identity');
 const Scheduler                            = require('./modules/Scheduler');
 const ContentDedup                         = require('./modules/ContentDedup');
 const Logger                               = require('./utils/logger');
@@ -114,6 +116,19 @@ class Sengkrep {
 
     this.formHandler = new FormHandler({ csrf: options.csrf ?? {} });
     this.deduplicator = new UrlDeduplicator(options.dedup ?? {});
+
+    const blockOptions = typeof options.blocks === 'object' ? options.blocks : {};
+    this.blockDetector = options.blocks
+      ? new BlockDetector(blockOptions)
+      : null;
+    this.blockMode = options.blocks ? (blockOptions.mode ?? 'report') : null;
+
+    const identityOptions = typeof options.identity === 'object' ? options.identity : {};
+    this.identityPool = (options.identity || options.identities)
+      ? new IdentityPool(Array.isArray(options.identities)
+        ? { ...identityOptions, identities: options.identities }
+        : identityOptions)
+      : null;
 
     this.fetcher = new Fetcher({
       timeout:      options.timeout      ?? 30000,
@@ -376,7 +391,14 @@ class Sengkrep {
     return this.retry.run(async (attempt) => {
       const release         = this.rateLimiter.enabled ? await this.rateLimiter.acquire(hostname) : null;
       const releaseAdaptive = this.adaptive ? await this.adaptive.acquire(hostname) : null;
-      const proxy           = this.proxyRotator.enabled ? this.proxyRotator.next(hostname) : null;
+      const sessionKey      = this.options.identitySession ?? hostname;
+      const identity        = this.identityPool ? this.identityPool.get(sessionKey) : null;
+
+      if (identity) this.fingerprint.setIdentity(identity);
+
+      const proxy = this.proxyRotator.enabled
+        ? this.proxyRotator.next(hostname, { session: identity?.id })
+        : null;
 
       try {
         if (attempt > 0) {
@@ -389,15 +411,48 @@ class Sengkrep {
 
         const buildHeaders = () => ({ ...conditionalHeaders, ...this.auth.buildHeaders(), ...(reqOptions.headers ?? {}) });
 
+        const requestConfig = {
+          ...reqOptions,
+          headers: buildHeaders(),
+          lookup: pinnedLookup,
+          onRedirect,
+          ...(this.blockDetector || this.options.allowErrorStatus ? { allowErrorStatus: true } : {}),
+        };
+
         let res;
         try {
-          res = await this._doRequest(resolvedUrl, { ...reqOptions, headers: buildHeaders(), lookup: pinnedLookup, onRedirect }, proxy);
+          res = await this._doRequest(resolvedUrl, requestConfig, proxy);
         } catch (err) {
           if (err.status === 401 && this.auth.shouldRefresh(401) && !attemptedRefresh) {
             attemptedRefresh = true;
             await this.auth.refresh();
-            res = await this._doRequest(resolvedUrl, { ...reqOptions, headers: buildHeaders(), lookup: pinnedLookup, onRedirect }, proxy);
+            res = await this._doRequest(resolvedUrl, requestConfig, proxy);
           } else {
+            throw err;
+          }
+        }
+
+        if (this.blockDetector) {
+          const verdict = this.blockDetector.detect(res);
+          if (verdict.blocked) {
+            if (this.identityPool && this.identityPool.rotateOnBlock) this.identityPool.rotate(sessionKey);
+            if (proxy) this.proxyRotator.reportFailure(proxy);
+            this.webhook.fire('onBlock', {
+              url: resolvedUrl,
+              verdict,
+              identity: identity ? identity.toJSON() : null,
+              attempt,
+            });
+            this.logger.warn(`[block] ${verdict.vendorName ?? verdict.vendor} ${verdict.kind} on ${resolvedUrl} (${verdict.confidence} confidence)`);
+            res.block = verdict;
+
+            if (this.blockMode === 'throw' || this.blockMode === 'retry') {
+              throw new BlockError(verdict, resolvedUrl);
+            }
+          } else if (res.status >= 400) {
+            const err = new FetchError(`HTTP ${res.status}`, res.status, 'HTTP_ERROR');
+            err.headers = res.headers;
+            err.retryAfterMs = parseRetryAfter(res.headers?.['retry-after']);
             throw err;
           }
         }
@@ -449,6 +504,25 @@ class Sengkrep {
     const pending = [...this._background];
     await Promise.allSettled(pending);
     return pending.length;
+  }
+
+  async probe(url, options = {}) {
+    const detector = options.detector instanceof BlockDetector
+      ? options.detector
+      : (this.blockDetector ?? new BlockDetector());
+
+    const res = await this._fetch(url, { allowErrorStatus: true, ...(options.request ?? {}) });
+    const verdict = detector.detect(res);
+
+    return {
+      url,
+      finalUrl: res.url ?? url,
+      status: res.status,
+      blocked: verdict.blocked,
+      verdict,
+      headers: res.headers,
+      fromCache: res.fromCache === true,
+    };
   }
 
   async extract(url, schema, options = {}) {
@@ -527,6 +601,7 @@ class Sengkrep {
         responseType: parsedAs,
       };
 
+      if (res.block) meta.block = res.block;
       if (res.rendered) meta.rendered = true;
 
       const rateLimitInfo = parseRateLimitHeaders(res.headers);

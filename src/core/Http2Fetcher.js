@@ -215,7 +215,7 @@ class Http2Fetcher {
           });
         }
 
-        if (status >= 400) {
+        if (status >= 400 && !config.allowErrorStatus) {
           const err = new Http2Error(`HTTP ${status}`, 'HTTP_ERROR');
           err.status = status;
           err.headers = responseHeaders;

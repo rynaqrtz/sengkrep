@@ -1,14 +1,15 @@
 {
   "generatedFrom": "index.d.ts",
-  "hash": "48c357f1cddb47fb016e858346ee3c7a49c46579",
+  "hash": "21a41ffa6594b997059d9bfd860f482dc3abd985",
   "counts": {
-    "type": 17,
-    "interface": 115,
-    "function": 4,
-    "class": 67
+    "type": 18,
+    "interface": 123,
+    "function": 6,
+    "class": 71
   },
   "categories": {
     "Types": [
+      "BlockKind",
       "DoctorStatus",
       "FieldSelector",
       "JsonSchema",
@@ -19,6 +20,9 @@
       "StorageBackend"
     ],
     "Interfaces": [
+      "BlockResponseInput",
+      "BlockSignature",
+      "BlockVerdict",
       "BrowserProfile",
       "CacheLookup",
       "CrawlJob",
@@ -29,6 +33,7 @@
       "FieldDefinition",
       "FingerprintContext",
       "HealthAlert",
+      "IdentitySpec",
       "JsonFieldDefinition",
       "PaginationDetectorModule",
       "PaginationNext",
@@ -51,7 +56,9 @@
       "DoctorReport",
       "ExtractResult",
       "HealthReport",
+      "IdentityPoolStats",
       "ObservabilityReport",
+      "ProbeResult",
       "RateLimitInfo",
       "SchemaInferenceResult",
       "SingleFlightStats",
@@ -62,6 +69,7 @@
       "AdaptiveThrottleOptions",
       "AuthOptions",
       "BatchOptions",
+      "BlockOptions",
       "CacheOptions",
       "CircuitBreakerOptions",
       "ComplianceOptions",
@@ -73,6 +81,7 @@
       "ExtractOptions",
       "FingerprintOptions",
       "HealthOptions",
+      "IdentityPoolOptions",
       "ObservabilityOptions",
       "PaginationConfig",
       "RateLimitOptions",
@@ -103,11 +112,14 @@
     ],
     "Functions": [
       "createStorage",
-      "doctor"
+      "doctor",
+      "isJsonPath",
+      "jsonPath"
     ],
     "Classes": [
       "AdaptiveThrottle",
       "AuthManager",
+      "BlockDetector",
       "Cache",
       "CircuitBreaker",
       "ContentDedup",
@@ -123,6 +135,8 @@
       "GraphQLClient",
       "HealthMonitor",
       "Http2Fetcher",
+      "Identity",
+      "IdentityPool",
       "Incremental",
       "Interceptors",
       "MemoryAdapter",
@@ -196,6 +210,7 @@
       "SessionPoolSession"
     ],
     "Errors": [
+      "BlockError",
       "CanceledError",
       "CircuitOpenError",
       "ExtractionError",
@@ -1186,6 +1201,237 @@
       "methods": []
     },
     {
+      "name": "BlockKind",
+      "kind": "type",
+      "slug": "block-kind",
+      "category": "Types",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "BlockSignature",
+      "kind": "interface",
+      "slug": "block-signature",
+      "category": "Interfaces",
+      "properties": [
+        "id",
+        "name",
+        "kind",
+        "weight",
+        "retryable",
+        "headers",
+        "body",
+        "cookies"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BlockOptions",
+      "kind": "interface",
+      "slug": "block-options",
+      "category": "Options",
+      "properties": [
+        "mode",
+        "minConfidence",
+        "statuses",
+        "signatures",
+        "vendors"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BlockVerdict",
+      "kind": "interface",
+      "slug": "block-verdict",
+      "category": "Interfaces",
+      "properties": [
+        "blocked",
+        "confidence",
+        "vendor",
+        "vendorName",
+        "kind",
+        "retryable",
+        "status",
+        "signals",
+        "at"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BlockResponseInput",
+      "kind": "interface",
+      "slug": "block-response-input",
+      "category": "Interfaces",
+      "properties": [
+        "status",
+        "headers",
+        "body",
+        "cookies"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BlockError",
+      "kind": "class",
+      "slug": "block-error",
+      "category": "Errors",
+      "properties": [
+        "code",
+        "url",
+        "vendor",
+        "kind",
+        "confidence",
+        "status",
+        "signals",
+        "retryable",
+        "verdict"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BlockDetector",
+      "kind": "class",
+      "slug": "block-detector",
+      "category": "Classes",
+      "properties": [
+        "VENDORS"
+      ],
+      "methods": [
+        "detect",
+        "isBlocked",
+        "addSignature",
+        "stats"
+      ]
+    },
+    {
+      "name": "IdentitySpec",
+      "kind": "interface",
+      "slug": "identity-spec",
+      "category": "Interfaces",
+      "properties": [
+        "id",
+        "label",
+        "browser",
+        "platform",
+        "userAgent",
+        "locale",
+        "timezone",
+        "viewport",
+        "deviceMemory",
+        "hardwareConcurrency",
+        "isMobile",
+        "profile"
+      ],
+      "methods": []
+    },
+    {
+      "name": "Identity",
+      "kind": "class",
+      "slug": "identity",
+      "category": "Classes",
+      "properties": [
+        "id",
+        "label",
+        "browser",
+        "platform",
+        "userAgent",
+        "locale",
+        "timezone",
+        "viewport",
+        "deviceMemory",
+        "hardwareConcurrency",
+        "isMobile",
+        "mobile",
+        "headers",
+        "LOCALE_TIMEZONES",
+        "VIEWPORTS"
+      ],
+      "methods": [
+        "toJSON"
+      ]
+    },
+    {
+      "name": "IdentityPoolOptions",
+      "kind": "interface",
+      "slug": "identity-pool-options",
+      "category": "Options",
+      "properties": [
+        "identities",
+        "size",
+        "rotation",
+        "rotateOnBlock"
+      ],
+      "methods": []
+    },
+    {
+      "name": "IdentityPoolStats",
+      "kind": "interface",
+      "slug": "identity-pool-stats",
+      "category": "Results",
+      "properties": [
+        "assigned",
+        "rotations",
+        "size",
+        "active",
+        "rotation"
+      ],
+      "methods": []
+    },
+    {
+      "name": "IdentityPool",
+      "kind": "class",
+      "slug": "identity-pool",
+      "category": "Classes",
+      "properties": [
+        "identities",
+        "rotateOnBlock",
+        "enabled",
+        "size"
+      ],
+      "methods": [
+        "list",
+        "get",
+        "next",
+        "rotate",
+        "release",
+        "reset",
+        "stats",
+        "generate"
+      ]
+    },
+    {
+      "name": "ProbeResult",
+      "kind": "interface",
+      "slug": "probe-result",
+      "category": "Results",
+      "properties": [
+        "url",
+        "finalUrl",
+        "status",
+        "blocked",
+        "verdict",
+        "headers",
+        "fromCache"
+      ],
+      "methods": []
+    },
+    {
+      "name": "jsonPath",
+      "kind": "function",
+      "slug": "json-path",
+      "category": "Functions",
+      "properties": [],
+      "methods": []
+    },
+    {
+      "name": "isJsonPath",
+      "kind": "function",
+      "slug": "is-json-path",
+      "category": "Functions",
+      "properties": [],
+      "methods": []
+    },
+    {
       "name": "SengkrepOptions",
       "kind": "interface",
       "slug": "sengkrep-options",
@@ -1232,6 +1478,10 @@
         "renderer",
         "render",
         "singleFlight",
+        "blocks",
+        "identity",
+        "identities",
+        "identitySession",
         "scheduler",
         "robotsTtl",
         "tempFileTtl",
@@ -1436,12 +1686,14 @@
       "category": "Classes",
       "properties": [
         "profile",
+        "identity",
         "PROFILES",
         "ACCEPT_ENCODING",
         "ZSTD_SUPPORTED"
       ],
       "methods": [
         "setProfile",
+        "setIdentity",
         "buildHeaders",
         "getUA",
         "delay",
@@ -3134,6 +3386,9 @@
         "graphql",
         "transport",
         "singleFlight",
+        "blockDetector",
+        "blockMode",
+        "identityPool",
         "scheduler",
         "adaptive",
         "contentDedup",
@@ -3144,6 +3399,7 @@
       "methods": [
         "fetch",
         "load",
+        "probe",
         "extract",
         "batch",
         "stream",
@@ -3229,6 +3485,12 @@
         "Transport",
         "AdaptiveThrottle",
         "SingleFlight",
+        "BlockDetector",
+        "BlockError",
+        "Identity",
+        "IdentityPool",
+        "jsonPath",
+        "isJsonPath",
         "Doctor",
         "Scheduler",
         "JobStore",
@@ -3259,6 +3521,7 @@
         "crawl",
         "submitForm",
         "inferSchema",
+        "probe",
         "captureHar",
         "captureUrl",
         "importCookies",

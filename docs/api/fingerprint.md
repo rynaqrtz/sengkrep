@@ -15,6 +15,7 @@ new Fingerprint(options?: FingerprintOptions)
 | Property | Type | Required | Flags |
 | --- | --- | --- | --- |
 | `profile` | `BrowserProfile` | yes | `readonly` |
+| `identity` | `Identity \| null` | yes | `readonly` |
 | `PROFILES` | `BrowserProfile[]` | yes | `static` |
 | `ACCEPT_ENCODING` | `string` | yes | `static` |
 | `ZSTD_SUPPORTED` | `boolean` | yes | `static` |
@@ -24,6 +25,7 @@ new Fingerprint(options?: FingerprintOptions)
 | Method | Parameters | Returns | Flags |
 | --- | --- | --- | --- |
 | `setProfile` | `id: string` | `BrowserProfile` |  |
+| `setIdentity` | `identity: Identity \| null` | `BrowserProfile \| null` |  |
 | `buildHeaders` | `extra?: Record<string, string>, context?: FingerprintContext \| null` | `Record<string, string>` |  |
 | `getUA` |  | `string` |  |
 | `delay` | `base?: number` | `Promise<void>` |  |
@@ -34,6 +36,7 @@ new Fingerprint(options?: FingerprintOptions)
 - [BrowserProfile](./browser-profile.md)
 - [FingerprintContext](./fingerprint-context.md)
 - [FingerprintOptions](./fingerprint-options.md)
+- [Identity](./identity.md)
 
 ## Declaration
 

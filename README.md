@@ -26,6 +26,7 @@
 - [Scheduling](#scheduling)
 - [Data sinks](#data-sinks)
 - [Network capture](#network-capture)
+- [Anti-block](#anti-block)
 - [Command line](#command-line)
 - [Core API](#core-api)
 - [Schema syntax](#schema-syntax)
@@ -54,10 +55,12 @@
 - diff detection between runs against the same URL
 - rate limiting and adaptive throttling per host
 - proxy rotation, cookie jar, session pool, CSRF handling, token refresh
+- bot-wall detection with per-session browser identities and proxy session pinning
 - resumable crawling, a distributed queue, and three storage backends
 - a scheduler with persistent job state, so a cadence survives a restart
 - data sinks with upsert by key, to Postgres, MySQL, ClickHouse, S3, a file or memory
 - network capture, so you can find the API behind a page without opening DevTools
+- JSONPath on JSON responses, without a dependency
 - TypeScript definitions for the full public surface
 
 The only runtime dependency is cheerio. Everything else is Node built-ins, including the DevTools Protocol client and its WebSocket.
@@ -726,6 +729,108 @@ sengkrep capture cookies cookies.txt --domain app.example.com --out jar.json
 
 When `--schema`, `--script` or `--script-out` is used, the text report is not printed, so stdout stays clean for a pipe.
 
+## Anti-block
+
+A scraper that gets a response is not the same as a scraper that gets the data. Bot walls (Cloudflare, DataDome, PerimeterX, Akamai, Imperva, Kasada, AWS WAF, Sucuri) answer with a challenge page, a CAPTCHA, or a `403` that looks like any other error. `sengkrep` names what happened, then lets you decide what to do about it.
+
+### Recognise the wall
+
+```js
+const client = sengkrep.create({ blocks: true });
+
+const result = await client.extract(url, schema);
+console.log(result._sengkrep.block);
+// { blocked: true, vendor: 'cloudflare', kind: 'challenge', confidence: 'high', ... }
+```
+
+`blocks` has three modes:
+
+| Mode | What happens on a block |
+|---|---|
+| `report` (default) | The verdict is attached to `result._sengkrep.block` and the response is returned |
+| `retry` | A `BlockError` is thrown so `Retry` tries again with the next identity and proxy, up to `retry.max` |
+| `throw` | A `BlockError` is thrown on the first block |
+
+Use the mode that matches the job: `report` to measure how often you are blocked, `retry` for a normal scrape, `throw` when you would rather fail fast than burn requests.
+
+A blocked `403` is still returned in `report` mode so the metadata exists, but any other `4xx` stays an error. That is the one behaviour `blocks` changes about status handling.
+
+### Check without scraping
+
+```js
+const verdict = await client.probe(url);
+console.log(verdict.blocked, verdict.verdict.vendor, verdict.verdict.signals);
+```
+
+`probe()` sends one request and returns `{ url, finalUrl, status, blocked, verdict, headers, fromCache }` without throwing on a non-2xx. It works with `blocks` off too, since it creates a detector when one is not configured. The CLI wraps it and exits `2` when a wall is found, so a shell can branch on the result.
+
+### Detector on its own
+
+```js
+const detector = new sengkrep.BlockDetector();
+const verdict = detector.detect({ status: 403, headers: response.headers, body });
+```
+
+A verdict carries `blocked`, `confidence` (`none` to `high`), `vendor`, `vendorName`, `kind` (`challenge`, `captcha`, `rate-limit`, `denied`), `retryable`, `status`, the `signals` that matched, and a timestamp. Vendor signatures are data, so a site-specific wall can be added without touching the library:
+
+```js
+detector.addSignature({
+  id: 'acme',
+  name: 'Acme WAF',
+  kind: 'denied',
+  headers: [{ name: 'x-acme-block' }],
+  body: [{ label: 'acme', pattern: /acme waf/i }],
+});
+```
+
+`minConfidence` defaults to `low`. Raise it to `high` when a single weak signal should not count as a block.
+
+### Identities
+
+An identity is one coherent browser: user agent, client hints, locale, timezone, viewport, memory and CPU count. A pool keeps one identity per session, so a site sees the same visitor across requests, and rotates when it is blocked.
+
+```js
+const client = sengkrep.create({
+  blocks: { mode: 'retry' },
+  identity: { size: 12, rotation: 'sticky' },
+});
+```
+
+| Option | Meaning |
+|---|---|
+| `size` | How many identities to generate when none are given |
+| `identities` | Your own list, each an `Identity` or a plain spec |
+| `rotation` | `sticky` by session (default), `round-robin`, or `random` |
+| `rotateOnBlock` | Choose a new identity after a detected block (default `true`) |
+| `identitySession` | What to key session stickiness on. Defaults to the hostname |
+
+An identity also reaches the renderer, so a CDP or Playwright session can present the same locale and viewport as its HTTP requests.
+
+### Proxy sessions
+
+When a proxy URL carries the `{session}` placeholder, the session id is substituted for you, so a rotating proxy can still keep one exit IP per identity:
+
+```js
+const client = sengkrep.create({
+  proxies: ['http://user-{session}:pass@gw.example:8080'],
+  proxyStrategy: 'sticky',
+  identity: { size: 8 },
+});
+```
+
+`ProxyRotator.next(host, { session })` returns `http://user-abc123:pass@gw.example:8080` for session `abc123`, the same URL for the same session, and a different one for a different session. Failures are counted against the template rather than each resolved URL, so a banned gateway is still retired.
+
+### Watching block events
+
+Every detected block fires the `onBlock` webhook with the URL, the verdict, the identity in use and the attempt number. The payload is the same shape as the other events:
+
+```js
+const client = sengkrep.create({
+  blocks: true,
+  webhook: { onBlock: 'https://hooks.example/sengkrep' },
+});
+```
+
 ## Command line
 
 The package installs a `sengkrep` command. `sengkrep help` prints the same list, and every command is a thin wrapper over the library, so anything the CLI does can be done from code.
@@ -766,6 +871,20 @@ sengkrep scrape https://books.toscrape.com \
 ```
 
 The sink is created, flushed and closed for you. A malformed descriptor is rejected before a request is sent. Flags accept both `--flag value` and `--flag=value`, so the `--headless=false` written in [Network capture](#network-capture) behaves the way it reads.
+
+### `probe`
+
+```bash
+sengkrep probe https://example.com
+sengkrep probe https://example.com --json
+sengkrep probe https://example.com --method POST --proxy http://gw.example:8080
+```
+
+Sends one request and prints the verdict: status, whether a bot wall was recognized, which vendor, what kind of wall, how confident the match is, and the signals behind it. Exit codes: `0` when the response looks normal, `2` when a bot wall is detected, `1` on a request error, so a shell can branch on the result.
+
+```bash
+sengkrep probe "$(cat urls.txt)" >/dev/null || echo blocked
+```
 
 ### `jobs` and `run`
 
@@ -982,15 +1101,20 @@ const schema = {
 
 A selector can be a string or an array, and an array is tried in order until one matches. `type: 'html'` returns inner HTML instead of trimmed text. `required: true` raises `ExtractionError` when the field comes back empty.
 
-For JSON responses the schema follows the same shape with `path` instead of `selector`:
+For JSON responses the schema follows the same shape with `path` instead of `selector`, and a path written as a JSONPath expression is evaluated by the built-in JSONPath engine:
 
 ```js
 const schema = {
   id: { path: 'data.items[0].id', required: true },
   names: 'data.items[*].name',
   total: { path: 'meta.total', transform: (v) => Number(v) },
+  cheap:  '$.data.items[?(@.price < 10)].title',
+  deep:   '$..author.name',
+  window: '$.store.book[0:3].title',
 };
 ```
+
+The engine supports child access, `[*]` wildcards, indexes including negatives, slices `[0:3]`, unions `[0,2]`, recursive descent `..key`, and filters `[?(@.price > 15)]` with `==`, `!=`, `>`, `<`, `>=`, `<=` and `=~`. It is exported as `sengkrep.jsonPath(data, expression)` for use on its own.
 
 ## Modules
 
@@ -1000,7 +1124,8 @@ Reliability:
 
 | Class | Purpose |
 |---|---|
-| `Retry` | Backoff with jitter, status allowlist, `Retry-After` support and an optional total `budgetMs` |
+| `Retry` | Backoff with jitter, status allowlist, `Retry-After` support, a retryable `BLOCKED` code, and an optional total `budgetMs` |
+| `BlockDetector` | Classifies a response as a Cloudflare, DataDome, PerimeterX, Akamai, Imperva, Kasada, AWS WAF, Sucuri or CAPTCHA wall, with a confidence and the signals that matched |
 | `SingleFlight` | Merges identical in-flight requests into one and shares the result or the error with every waiter |
 | `CircuitBreaker` | Opens after repeated failures on a key and closes again after a cooldown |
 | `HealthMonitor` | Tracks field fill rates and selector matches over a rolling window, then alerts |
@@ -1014,10 +1139,11 @@ Identity and access:
 
 | Class | Purpose |
 |---|---|
-| `Fingerprint` | One browser profile drives the User-Agent, client hints, `Sec-Fetch-*` and language together |
+| `Fingerprint` | One browser profile drives the User-Agent, client hints, `Sec-Fetch-*` and language together, or one pooled identity does |
+| `Identity` / `IdentityPool` | Coherent browser identities (UA, client hints, locale, timezone, viewport) kept per session and rotated on block |
 | `CookieJar` | Cookie storage per registrable host, including IPv4 and IPv6 hosts |
 | `RateLimiter` | Serialized per-host spacing at a fixed rate |
-| `ProxyRotator` | Round robin, random or sticky proxy selection with failure tracking |
+| `ProxyRotator` | Round robin, random or sticky proxy selection with failure tracking and `{session}` substitution for per-identity exits |
 | `SessionPool` | Reusable sessions with cookies and user agents, round robin or least used |
 | `AuthManager` | Bearer or JWT auth with a refresh hook on 401 |
 | `CsrfHandler` | Reads CSRF tokens from meta tags, hidden inputs and cookies, then replays them |
@@ -1131,7 +1257,7 @@ Options and defaults:
 | `auth` | none | `{ type: 'bearer', token, refresh, refreshOn }` |
 | `csrf` | `{ auto: true }` | Automatic token replay |
 | `observability` | `{ enabled: false }` | `{ enabled, port }` for the metrics endpoint |
-| `webhook` | none | `{ onStart, onComplete, onError, onProgress, retries, secret }` |
+| `webhook` | none | `{ onStart, onComplete, onError, onBlock, onProgress, retries, secret }` |
 | `har` | `false` | Record every request into a HAR file |
 | `robotsTtl`, `tempFileTtl` | `3600000` | Cache lifetime for `robots.txt`, cleanup age for streamed temp files |
 | `adaptive` | `false` | `true` or `{ minConcurrency, maxConcurrency, backoffFactor, baseDelay }` |
@@ -1140,6 +1266,10 @@ Options and defaults:
 | `renderer`, `render` | none | `renderer(url, options)` returns HTML, or `sengkrep.renderers.cdp()` for the built-in one; `render: true` applies it to every `extract()` |
 | `compliance` | `false` | `{ userAgent, respectXRobotsTag, maskFields, auditLog, purpose }` |
 | `validate` | `{}` | Per-field validation rules |
+| `blocks` | `false` | `true` or `{ mode: 'report' \| 'retry' \| 'throw', minConfidence, statuses, signatures }`. Detects bot walls on every response |
+| `identity` | `false` | `true` or `{ size, identities, rotation, rotateOnBlock }`. Keeps one coherent browser identity per session |
+| `identitySession` | hostname | What to key identity stickiness on |
+| `identities` | none | A direct list of `Identity` objects or plain specs, as an alternative to `identity` |
 
 ## Validation rules
 
@@ -1210,6 +1340,7 @@ const { errors } = require('sengkrep');
 | `ProxyError` | `PROXY_ERROR` | The proxy tunnel failed |
 | `SecurityError` | `SECURITY_BLOCKED` | `SecurityGuard` blocked the target |
 | `CircuitOpenError` | `CIRCUIT_OPEN` | The breaker is open. `err.retryAt` holds the retry timestamp |
+| `BlockError` | `BLOCKED` | Block detection is in `retry` or `throw` mode and the response matched a bot wall. `err.vendor`, `err.kind`, `err.confidence` and `err.signals` describe it, and `err.retryable` says whether `Retry` will try again |
 | `ExtractionError` | | A required HTML field was empty. `err.field` and `err.selector` say which |
 | `JsonExtractionError` | | A required JSON field was empty. `err.field` and `err.path` say which |
 | `ValidationError` | | Strict validation failed. `err.errors` lists every failure |
@@ -1313,7 +1444,7 @@ Node 18 is not supported. The cheerio dependency pulls `undici`, which needs Nod
 
 ![Test suite results per file](docs/test-results.svg)
 
-290 tests run against local fixture servers, so the suite needs no external network access and works offline, in CI, and on machines where outbound traffic is restricted.
+311 tests run against local fixture servers, so the suite needs no external network access and works offline, in CI, and on machines where outbound traffic is restricted.
 
 ```bash
 npm test            # every test file
@@ -1341,6 +1472,7 @@ npm run docs:check  # fail when docs/api no longer matches index.d.ts
 | `13-sinks.js` | Batching, key and composite-key upserts, retries, transforms, JSONL and CSV files, generated SQL per dialect, ClickHouse inserts, S3 object keys, and sink wiring into batch, stream, export and crawl |
 | `14-api-docs.js` | The generator: every export is parsed, properties and methods are read, overloads group, links resolve, output is deterministic, and the committed reference is up to date |
 | `15-cli.js` | The command line against the fixture server: flag parsing including `--flag=value`, `scrape` with `--output` and `--sink`, `doctor` as text, JSON and a failing check, `jobs` listing and JSON, `run` with `--once`, `--job`, `--due`, a throwing handler and `--watch` stopped by `SIGINT`, and cookie import |
+| `16-anti-block.js` | Block detection per vendor, confidence levels and custom signatures, `probe()`, the three block modes, identity stickiness and rotation, identity-driven headers, `{session}` proxy substitution, JSONPath expressions in schemas, and the exported `jsonPath` helper |
 
 The two images at the top of this file are generated from the same fixtures by `node docs/charts.js`. Nothing in them is typed in by hand.
 
@@ -1348,6 +1480,7 @@ The two images at the top of this file are generated from the same fixtures by `
 
 | Version | Changes |
 |---|---|
+| 5.9.0 | `BlockDetector` names the bot wall (Cloudflare, DataDome, PerimeterX, Akamai, Imperva, Kasada, AWS WAF, Sucuri, generic CAPTCHA) with a confidence and the signals that matched, `probe()` checks one URL without throwing, `blocks` has report, retry and throw modes, `IdentityPool` keeps one coherent browser per session and rotates on block, proxy URLs take `{session}` for per-identity exits, and JSON schemas accept JSONPath (wildcards, slices, unions, recursive descent and filters) through a built-in engine |
 | 5.8.0 | `sengkrep doctor` reports Node, `node:sqlite`, zstd, writable directories, optional drivers, DNS and a DevTools endpoint, as text or JSON, and `sengkrep.doctor()` returns the same report. `sengkrep jobs` and `sengkrep run` expose the scheduler from the terminal with `--job`, `--once`, `--due` and `--watch`, and `sengkrep scrape --sink` writes through a sink descriptor. `sengkrep scrape` no longer hangs, and `--flag=value` is parsed instead of being ignored |
 | 5.7.0 | `scripts/api-docs.js` and `npm run docs` generate `docs/api`, a page per export plus an index and a machine-readable `api.json`. `npm run docs:check` fails when the reference drifts from `index.d.ts`, and CI runs it. The test matrix gained a macOS runner |
 | 5.6.0 | Data sinks with upsert by key: `Sink`, `MemorySink`, `FileSink` (JSONL and CSV), `PostgresSink`, `MySQLSink`, `ClickHouseSink`, `S3Sink` and `createSink()`. `batch`, `stream`, `export` and `crawl` accept a `sink`, either as an instance you own or a descriptor the scraper creates and closes |

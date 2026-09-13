@@ -70,6 +70,12 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 | `Transport` | `typeof Transport` | yes |  |
 | `AdaptiveThrottle` | `typeof AdaptiveThrottle` | yes |  |
 | `SingleFlight` | `typeof SingleFlight` | yes |  |
+| `BlockDetector` | `typeof BlockDetector` | yes |  |
+| `BlockError` | `typeof BlockError` | yes |  |
+| `Identity` | `typeof Identity` | yes |  |
+| `IdentityPool` | `typeof IdentityPool` | yes |  |
+| `jsonPath` | `typeof jsonPath` | yes |  |
+| `isJsonPath` | `typeof isJsonPath` | yes |  |
 | `Doctor` | `{ (options?: DoctorOptions): Promise<DoctorReport>; MIN_NODE: string; SQLITE_NODE: string; OPTIONAL_DRIVERS: DoctorDriver[]; compareVersions(left: string, right: string): number; }` | yes |  |
 | `Scheduler` | `typeof Scheduler` | yes |  |
 | `JobStore` | `typeof JobStore` | yes |  |
@@ -82,7 +88,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 | `cheerio` | `{ load: (html: string) => CheerioAPI }` | yes |  |
 | `plugins` | `{ timestamp: (fieldName?: string) => PluginHooks; logToFile: (filePath: string) => PluginHooks; fieldMapper: (mapping: Record<string, string>) => PluginHooks; }` | yes |  |
 | `contentSafety` | `{ sniffContentType(buffer: Buffer): string \| null; isLikelyBinary(buffer: Buffer): boolean; decodeBuffer(buffer: Buffer, options?: { headerCharset?: string \| null }): { text: string; charset: string; source: string }; inspect(buffer: Buffer, contentType?: string \| null): { isBinary: boolean; sniffedType: string \| null; declaredType: string \| null; mismatch: boolean; size: number }; }` | yes |  |
-| `errors` | `{ FetchError: typeof FetchError; TimeoutError: typeof TimeoutError; CanceledError: typeof CanceledError; ProxyError: typeof ProxyError; Http2Error: typeof Http2Error; ExtractionError: typeof ExtractionError; JsonExtractionError: typeof JsonExtractionError; ValidationError: typeof ValidationError; SecurityError: typeof SecurityError; CircuitOpenError: typeof CircuitOpenError; }` | yes |  |
+| `errors` | `{ FetchError: typeof FetchError; TimeoutError: typeof TimeoutError; CanceledError: typeof CanceledError; ProxyError: typeof ProxyError; Http2Error: typeof Http2Error; ExtractionError: typeof ExtractionError; JsonExtractionError: typeof JsonExtractionError; ValidationError: typeof ValidationError; SecurityError: typeof SecurityError; CircuitOpenError: typeof CircuitOpenError; BlockError: typeof BlockError; }` | yes |  |
 
 ## Methods
 
@@ -103,6 +109,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 | `crawl` | `options: CrawlOptions` | `CrawlJob` |  |
 | `submitForm` | `url: string, formSelector: string, overrides?: Record<string, unknown>` | `Promise<unknown>` |  |
 | `inferSchema` | `url: string, options?: Record<string, unknown>` | `Promise<SchemaInferenceResult>` |  |
+| `probe` | `url: string, options?: { request?: RequestConfig; detector?: BlockDetector }` | `Promise<ProbeResult>` |  |
 | `captureHar` | `input: string \| HarLog, options?: Record<string, unknown>` | `NetworkCapture` |  |
 | `captureUrl` | `url: string, options?: CdpCaptureOptions` | `Promise<NetworkCapture>` |  |
 | `importCookies` | `jar: CookieJar, options?: CookieImportOptions` | `Promise<number>` |  |
@@ -139,6 +146,8 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 - [AuthManager](./auth-manager.md)
 - [BatchOptions](./batch-options.md)
 - [BatchResult](./batch-result.md)
+- [BlockDetector](./block-detector.md)
+- [BlockError](./block-error.md)
 - [Cache](./cache.md)
 - [CanceledError](./canceled-error.md)
 - [CaptureAnalyze](./capture-analyze.md)
@@ -184,6 +193,8 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 - [HealthMonitor](./health-monitor.md)
 - [Http2Error](./http2-error.md)
 - [Http2Fetcher](./http2-fetcher.md)
+- [Identity](./identity.md)
+- [IdentityPool](./identity-pool.md)
 - [Incremental](./incremental.md)
 - [Interceptors](./interceptors.md)
 - [JobStore](./job-store.md)
@@ -200,6 +211,7 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 - [PluginHooks](./plugin-hooks.md)
 - [PluginSystem](./plugin-system.md)
 - [PostgresSink](./postgres-sink.md)
+- [ProbeResult](./probe-result.md)
 - [ProgressBar](./progress-bar.md)
 - [ProxyError](./proxy-error.md)
 - [ProxyRotator](./proxy-rotator.md)
@@ -234,6 +246,8 @@ Category: Interfaces · Source: [index.d.ts](../../index.d.ts) · [All exports](
 - [createSink](./create-sink.md)
 - [createStorage](./create-storage.md)
 - [doctor](./doctor.md)
+- [isJsonPath](./is-json-path.md)
+- [jsonPath](./json-path.md)
 
 ## Declaration
 

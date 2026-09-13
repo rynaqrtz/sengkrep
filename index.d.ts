@@ -534,6 +534,146 @@ export interface ValidationRule {
   custom?: (value: unknown, allData: Record<string, unknown>) => true | string;
 }
 
+export type BlockKind = 'challenge' | 'captcha' | 'rate-limit' | 'denied';
+
+export interface BlockSignature {
+  id: string;
+  name?: string;
+  kind?: BlockKind;
+  weight?: number;
+  retryable?: boolean;
+  headers?: Array<{ name: string; pattern?: RegExp }>;
+  body?: Array<{ label: string; pattern: RegExp }>;
+  cookies?: RegExp[];
+}
+
+export interface BlockOptions {
+  mode?: 'report' | 'retry' | 'throw';
+  minConfidence?: 'low' | 'medium' | 'high';
+  statuses?: number[];
+  signatures?: BlockSignature[];
+  vendors?: BlockSignature[];
+}
+
+export interface BlockVerdict {
+  blocked: boolean;
+  confidence: 'none' | 'low' | 'medium' | 'high';
+  vendor: string | null;
+  vendorName: string | null;
+  kind: BlockKind | null;
+  retryable: boolean;
+  status: number | null;
+  signals: string[];
+  at: string;
+}
+
+export interface BlockResponseInput {
+  status?: number;
+  headers?: Record<string, string | string[] | undefined>;
+  body?: string | Buffer;
+  cookies?: Array<string | { name?: string }>;
+}
+
+export class BlockError extends Error {
+  code: 'BLOCKED';
+  url: string | null;
+  vendor: string | null;
+  kind: string | null;
+  confidence: string | null;
+  status: number | null;
+  signals: string[];
+  retryable: boolean;
+  verdict: BlockVerdict | null;
+}
+
+export class BlockDetector {
+  constructor(options?: BlockOptions | boolean);
+  detect(response: BlockResponseInput): BlockVerdict;
+  isBlocked(response: BlockResponseInput): boolean;
+  addSignature(signature: BlockSignature): this;
+  stats(): { checked: number; blocked: number; byVendor: Record<string, number> };
+  static VENDORS: BlockSignature[];
+}
+
+export interface IdentitySpec {
+  id?: string;
+  label?: string;
+  browser?: string;
+  platform?: string | null;
+  userAgent?: string;
+  locale?: string;
+  timezone?: string;
+  viewport?: { width: number; height: number };
+  deviceMemory?: number;
+  hardwareConcurrency?: number;
+  isMobile?: boolean;
+  profile?: Partial<BrowserProfile>;
+}
+
+export class Identity {
+  constructor(spec?: IdentitySpec);
+  id: string;
+  label: string;
+  browser: string;
+  platform: string | null;
+  userAgent: string;
+  locale: string;
+  timezone: string;
+  viewport: { width: number; height: number };
+  deviceMemory: number;
+  hardwareConcurrency: number;
+  isMobile: boolean;
+  readonly mobile: boolean;
+  readonly headers: Record<string, string>;
+  toJSON(): IdentitySpec;
+  static LOCALE_TIMEZONES: Record<string, string[]>;
+  static VIEWPORTS: Array<{ width: number; height: number }>;
+}
+
+export interface IdentityPoolOptions extends IdentitySpec {
+  identities?: Array<Identity | IdentitySpec>;
+  size?: number;
+  rotation?: 'sticky' | 'round-robin' | 'random';
+  rotateOnBlock?: boolean;
+}
+
+export interface IdentityPoolStats {
+  assigned: number;
+  rotations: number;
+  size: number;
+  active: number;
+  rotation: string;
+}
+
+export class IdentityPool {
+  constructor(options?: IdentityPoolOptions | boolean);
+  identities: Identity[];
+  rotateOnBlock: boolean;
+  readonly enabled: boolean;
+  readonly size: number;
+  list(): Identity[];
+  get(seed?: string): Identity;
+  next(seed?: string): Identity;
+  rotate(seed?: string): Identity;
+  release(seed: string): boolean;
+  reset(): void;
+  stats(): IdentityPoolStats;
+  static generate(size?: number, options?: { profiles?: BrowserProfile[]; locales?: string[] }): Identity[];
+}
+
+export interface ProbeResult {
+  url: string;
+  finalUrl: string;
+  status: number;
+  blocked: boolean;
+  verdict: BlockVerdict;
+  headers: Record<string, string | string[] | undefined>;
+  fromCache: boolean;
+}
+
+export function jsonPath<T = unknown>(root: unknown, expression: string): T[];
+export function isJsonPath(expression: string): boolean;
+
 export interface SengkrepOptions {
   logLevel?: 'error' | 'warn' | 'info' | 'debug';
   logPretty?: boolean;
@@ -576,6 +716,10 @@ export interface SengkrepOptions {
   renderer?: RendererInput;
   render?: boolean;
   singleFlight?: SingleFlightOptions | boolean;
+  blocks?: BlockOptions | boolean;
+  identity?: IdentityPoolOptions | boolean;
+  identities?: Array<Identity | IdentitySpec>;
+  identitySession?: string;
   scheduler?: SchedulerOptions | boolean;
   robotsTtl?: number;
   tempFileTtl?: number;
@@ -659,7 +803,9 @@ export interface FingerprintContext {
 export class Fingerprint {
   constructor(options?: FingerprintOptions);
   readonly profile: BrowserProfile;
+  readonly identity: Identity | null;
   setProfile(id: string): BrowserProfile;
+  setIdentity(identity: Identity | null): BrowserProfile | null;
   buildHeaders(extra?: Record<string, string>, context?: FingerprintContext | null): Record<string, string>;
   getUA(): string;
   delay(base?: number): Promise<void>;
@@ -1729,6 +1875,9 @@ export class Sengkrep {
   graphql: GraphQLClient;
   transport: Transport;
   singleFlight: SingleFlight;
+  blockDetector: BlockDetector | null;
+  blockMode: 'report' | 'retry' | 'throw' | null;
+  identityPool: IdentityPool | null;
   scheduler: Scheduler | null;
   adaptive: AdaptiveThrottle | null;
   contentDedup: ContentDedup | null;
@@ -1738,6 +1887,7 @@ export class Sengkrep {
 
   fetch(url: string, options?: { params?: Record<string, unknown>; request?: RequestConfig }): Promise<RawResponse>;
   load(html: string): CheerioAPI;
+  probe(url: string, options?: { request?: RequestConfig; detector?: BlockDetector }): Promise<ProbeResult>;
 
   extract<T = Record<string, unknown>>(url: string, schema: Schema<T>, options?: ExtractOptions): Promise<ExtractResult<T>>;
   batch<T = Record<string, unknown>>(urls: string[], schema: Schema<T>, options?: BatchOptions): Promise<BatchResult<T>[]>;
@@ -1784,6 +1934,7 @@ export interface SengkrepStatic {
   crawl(options: CrawlOptions): CrawlJob;
   submitForm(url: string, formSelector: string, overrides?: Record<string, unknown>): Promise<unknown>;
   inferSchema(url: string, options?: Record<string, unknown>): Promise<SchemaInferenceResult>;
+  probe(url: string, options?: { request?: RequestConfig; detector?: BlockDetector }): Promise<ProbeResult>;
 
   Sengkrep: typeof Sengkrep;
   Fingerprint: typeof Fingerprint;
@@ -1878,6 +2029,12 @@ export interface SengkrepStatic {
   Transport: typeof Transport;
   AdaptiveThrottle: typeof AdaptiveThrottle;
   SingleFlight: typeof SingleFlight;
+  BlockDetector: typeof BlockDetector;
+  BlockError: typeof BlockError;
+  Identity: typeof Identity;
+  IdentityPool: typeof IdentityPool;
+  jsonPath: typeof jsonPath;
+  isJsonPath: typeof isJsonPath;
   Doctor: {
     (options?: DoctorOptions): Promise<DoctorReport>;
     MIN_NODE: string;
@@ -1945,6 +2102,7 @@ export interface SengkrepStatic {
     ValidationError: typeof ValidationError;
     SecurityError: typeof SecurityError;
     CircuitOpenError: typeof CircuitOpenError;
+    BlockError: typeof BlockError;
   };
 }
 

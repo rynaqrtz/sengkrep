@@ -17,6 +17,7 @@ const FILES = [
   '13-sinks.js',
   '14-api-docs.js',
   '15-cli.js',
+  '16-anti-block.js',
 ];
 
 let failed = 0;

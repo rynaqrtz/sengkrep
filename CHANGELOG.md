@@ -2,6 +2,21 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 5.9.0
+
+### Added
+
+- `BlockDetector`, `BlockError` and the `blocks` option. A response is classified against known bot walls: Cloudflare, DataDome, PerimeterX, Akamai, Imperva, Kasada, AWS WAF, Sucuri and Google's sorry page, plus generic CAPTCHA, rate-limit and access-denied markers. A verdict carries `blocked`, `confidence`, `vendor`, `vendorName`, `kind` (`challenge`, `captcha`, `rate-limit`, `denied`), `retryable`, `status` and the `signals` that matched. `addSignature()` accepts site-specific walls as data. Sites that answer with a normal status still count when their headers, body markers or cookies match.
+- `blocks` modes. `report` attaches the verdict to `result._sengkrep.block` and returns the response; `retry` throws `BlockError`, which `Retry` treats as retryable with its own backoff curve; `throw` raises on the first block. Every detected block fires the `onBlock` webhook with the URL, verdict, identity and attempt, and rotates the session identity when the pool has one.
+- `probe(url, options?)`, which sends one request with error statuses allowed and returns `{ url, finalUrl, status, blocked, verdict, headers, fromCache }` without throwing. The `sengkrep probe` command wraps it and exits `2` on a detected wall, so a shell can branch on the result.
+- `Identity` and `IdentityPool` behind the `identity` or `identities` options. An identity is one coherent browser: user agent, client-hint brands, platform, locale with a matching `Accept-Language`, timezone, viewport, device memory and CPU count. The pool keeps one identity per session (sticky by default, `round-robin` or `random` available), rotates on a detected block, and drives the fingerprint so requests and rendered sessions stay coherent.
+- `{session}` substitution in proxy URLs. With `proxies: ['http://user-{session}:pass@host:8080']` and `proxyStrategy: 'sticky'`, `ProxyRotator.next(host, { session })` resolves the placeholder per session, the same session keeps the same exit, and failures count against the template rather than each resolved URL.
+- JSONPath for JSON schemas. A `path` starting with `$` is evaluated by a built-in engine with child access, `[*]` wildcards, negative indexes, slices, unions, recursive descent `..key` and `[?(@.price > 15)]` filters (`==`, `!=`, `>`, `<`, `>=`, `<=`, `=~`). Existing dot-paths behave exactly as before. The engine is exported as `sengkrep.jsonPath(data, expression)`.
+
+### Fixed
+
+- A response with `allowErrorStatus` set keeps its error status instead of being rejected, which `probe()` and block-aware requests rely on. Plain `fetch()` and `extract()` still reject on 4xx and 5xx, including when `blocks` is on: only a recognized wall is returned or retried, everything else stays an error.
+
 ## 5.8.0
 
 ### Added

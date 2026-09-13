@@ -331,7 +331,7 @@ class Fetcher {
           return finish(resolve, { status: statusCode, headers: resHeaders, body: '', url, notModified: true, requestSize, responseSize: 0 });
         }
 
-        if (statusCode >= 400) {
+        if (statusCode >= 400 && !config.allowErrorStatus) {
           res.resume();
           const err = new FetchError(`HTTP ${statusCode}`, statusCode, 'HTTP_ERROR');
           err.headers    = resHeaders;
@@ -435,6 +435,7 @@ class Fetcher {
       rejectUnauthorized: options.rejectUnauthorized   ?? undefined,
       bufferAll:          options.bufferAll            ?? false,
       verifyLength:       options.verifyLength         ?? true,
+      allowErrorStatus:   options.allowErrorStatus     ?? false,
     };
 
     if (this.interceptors) {
@@ -453,4 +454,4 @@ class Fetcher {
   }
 }
 
-module.exports = { Fetcher, FetchError, TimeoutError, CanceledError };
+module.exports = { Fetcher, FetchError, TimeoutError, CanceledError, parseRetryAfter };

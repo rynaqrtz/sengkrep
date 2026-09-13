@@ -42,6 +42,21 @@ function handler(req, res) {
     return res.end(JSON.stringify({ data: { items: [{ title: 'A' }, { title: 'B' }], user: { name: 'qrtz' } } }));
   }
 
+  if (url.pathname === '/bot-wall') {
+    res.writeHead(403, { 'Content-Type': 'text/html', 'Server': 'cloudflare', 'CF-Ray': 'test-ray' });
+    return res.end('<html><head><title>Just a moment...</title></head><body><div id="cf-chl"></div><script src="/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page"></script></body></html>');
+  }
+
+  if (url.pathname === '/captcha-wall') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    return res.end('<html><body><div class="g-recaptcha"></div><p>Verify you are human</p></body></html>');
+  }
+
+  if (url.pathname === '/datadome-wall') {
+    res.writeHead(403, { 'Content-Type': 'text/html', 'X-DataDome': 'protected' });
+    return res.end('<html><body>datadome blocked this request via captcha-delivery.com</body></html>');
+  }
+
   if (url.pathname === '/json-no-ct') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     return res.end(JSON.stringify({ ok: true, n: 42 }));

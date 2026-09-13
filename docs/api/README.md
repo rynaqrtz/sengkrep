@@ -1,15 +1,16 @@
 # API reference
 
-203 exports: 67 classes, 4 functions, 115 interfaces, 17 types.
+218 exports: 71 classes, 6 functions, 123 interfaces, 18 types.
 
 Generated from `index.d.ts` by `npm run docs`. Do not edit this directory by hand; `npm run docs:check` fails when it drifts.
 
 Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md) · [Sink](./sink.md) · [Scheduler](./scheduler.md) · [createSink](./create-sink.md) · [NetworkCapture](./network-capture.md)
 
-## Errors (10)
+## Errors (11)
 
 | Name | Kind |
 | --- | --- |
+| [BlockError](./block-error.md) | `class` |
 | [CanceledError](./canceled-error.md) | `class` |
 | [CircuitOpenError](./circuit-open-error.md) | `class` |
 | [ExtractionError](./extraction-error.md) | `class` |
@@ -120,13 +121,14 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [SessionPoolOptions](./session-pool-options.md) | `interface` |
 | [SessionPoolSession](./session-pool-session.md) | `interface` |
 
-## Options (25)
+## Options (27)
 
 | Name | Kind |
 | --- | --- |
 | [AdaptiveThrottleOptions](./adaptive-throttle-options.md) | `interface` |
 | [AuthOptions](./auth-options.md) | `interface` |
 | [BatchOptions](./batch-options.md) | `interface` |
+| [BlockOptions](./block-options.md) | `interface` |
 | [CacheOptions](./cache-options.md) | `interface` |
 | [CircuitBreakerOptions](./circuit-breaker-options.md) | `interface` |
 | [ComplianceOptions](./compliance-options.md) | `interface` |
@@ -138,6 +140,7 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [ExtractOptions](./extract-options.md) | `interface` |
 | [FingerprintOptions](./fingerprint-options.md) | `interface` |
 | [HealthOptions](./health-options.md) | `interface` |
+| [IdentityPoolOptions](./identity-pool-options.md) | `interface` |
 | [ObservabilityOptions](./observability-options.md) | `interface` |
 | [PaginationConfig](./pagination-config.md) | `interface` |
 | [RateLimitOptions](./rate-limit-options.md) | `interface` |
@@ -150,7 +153,7 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [StorageOptions](./storage-options.md) | `interface` |
 | [WebhookOptions](./webhook-options.md) | `interface` |
 
-## Results (13)
+## Results (15)
 
 | Name | Kind |
 | --- | --- |
@@ -161,19 +164,22 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [DoctorReport](./doctor-report.md) | `interface` |
 | [ExtractResult](./extract-result.md) | `type` |
 | [HealthReport](./health-report.md) | `interface` |
+| [IdentityPoolStats](./identity-pool-stats.md) | `interface` |
 | [ObservabilityReport](./observability-report.md) | `interface` |
+| [ProbeResult](./probe-result.md) | `interface` |
 | [RateLimitInfo](./rate-limit-info.md) | `interface` |
 | [SchemaInferenceResult](./schema-inference-result.md) | `interface` |
 | [SingleFlightStats](./single-flight-stats.md) | `interface` |
 | [ValidationReport](./validation-report.md) | `interface` |
 | [WebhookDeliveryResult](./webhook-delivery-result.md) | `interface` |
 
-## Classes (38)
+## Classes (41)
 
 | Name | Kind |
 | --- | --- |
 | [AdaptiveThrottle](./adaptive-throttle.md) | `class` |
 | [AuthManager](./auth-manager.md) | `class` |
+| [BlockDetector](./block-detector.md) | `class` |
 | [Cache](./cache.md) | `class` |
 | [CircuitBreaker](./circuit-breaker.md) | `class` |
 | [ContentDedup](./content-dedup.md) | `class` |
@@ -189,6 +195,8 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [GraphQLClient](./graph-qlclient.md) | `class` |
 | [HealthMonitor](./health-monitor.md) | `class` |
 | [Http2Fetcher](./http2-fetcher.md) | `class` |
+| [Identity](./identity.md) | `class` |
+| [IdentityPool](./identity-pool.md) | `class` |
 | [Incremental](./incremental.md) | `class` |
 | [Interceptors](./interceptors.md) | `class` |
 | [MemoryAdapter](./memory-adapter.md) | `class` |
@@ -211,10 +219,13 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [Webhook](./webhook.md) | `class` |
 | [WordPress](./word-press.md) | `class` |
 
-## Interfaces (23)
+## Interfaces (27)
 
 | Name | Kind |
 | --- | --- |
+| [BlockResponseInput](./block-response-input.md) | `interface` |
+| [BlockSignature](./block-signature.md) | `interface` |
+| [BlockVerdict](./block-verdict.md) | `interface` |
 | [BrowserProfile](./browser-profile.md) | `interface` |
 | [CacheLookup](./cache-lookup.md) | `interface` |
 | [CrawlJob](./crawl-job.md) | `interface` |
@@ -225,6 +236,7 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [FieldDefinition](./field-definition.md) | `interface` |
 | [FingerprintContext](./fingerprint-context.md) | `interface` |
 | [HealthAlert](./health-alert.md) | `interface` |
+| [IdentitySpec](./identity-spec.md) | `interface` |
 | [JsonFieldDefinition](./json-field-definition.md) | `interface` |
 | [PaginationDetectorModule](./pagination-detector-module.md) | `interface` |
 | [PaginationNext](./pagination-next.md) | `interface` |
@@ -239,10 +251,11 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [ValidationErrorDetail](./validation-error-detail.md) | `interface` |
 | [ValidationRule](./validation-rule.md) | `interface` |
 
-## Types (8)
+## Types (9)
 
 | Name | Kind |
 | --- | --- |
+| [BlockKind](./block-kind.md) | `type` |
 | [DoctorStatus](./doctor-status.md) | `type` |
 | [FieldSelector](./field-selector.md) | `type` |
 | [JsonSchema](./json-schema.md) | `type` |
@@ -252,9 +265,11 @@ Start here: [Sengkrep](./sengkrep.md) · [SengkrepOptions](./sengkrep-options.md
 | [SchemaField](./schema-field.md) | `type` |
 | [StorageBackend](./storage-backend.md) | `type` |
 
-## Functions (2)
+## Functions (4)
 
 | Name | Kind |
 | --- | --- |
 | [createStorage](./create-storage.md) | `function` |
 | [doctor](./doctor.md) | `function` |
+| [isJsonPath](./is-json-path.md) | `function` |
+| [jsonPath](./json-path.md) | `function` |

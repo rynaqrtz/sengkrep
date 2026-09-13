@@ -42,6 +42,7 @@ Usage:
   sengkrep capture <har|browser|proxy|playwright> [target] [options]
   sengkrep capture cookies <cookies.txt> [--domain <host>]
   sengkrep cookies <cookies.txt> [--domain <host>]
+  sengkrep probe <url> [--json]
   sengkrep jobs <jobs.js> [--dir .sengkrep-jobs] [--json]
   sengkrep run <jobs.js> [--job <id> | --once | --due | --watch]
   sengkrep doctor [--host example.com] [--cdp http://127.0.0.1:9222] [--json]
@@ -62,6 +63,15 @@ Capture options:
 Cookie options:
   --domain <host>       Only keep cookies for this host (repeatable with commas)
   --out <path>          Write an exported cookie jar as JSON
+
+Options for probe:
+  --method <verb>       Request method (default: GET)
+  --proxy <url>         Route the request through a proxy
+  --no-identity         Send the request without a rotated browser identity
+  --json                Print the full verdict as JSON
+
+Probe exits 0 when the response looks normal, 2 when a bot wall is detected,
+and 1 on a request error, so a shell can branch on the result.
 
 Options for scrape:
   --schema <json>       Required. Extraction schema as JSON string
@@ -105,6 +115,7 @@ Capture examples:
 Examples:
   sengkrep fetch https://example.com
   sengkrep scrape https://books.toscrape.com --schema '{"title":"h1"}' --format csv --output books.csv
+  sengkrep probe https://example.com
   sengkrep run jobs.js --due
   sengkrep doctor --json
 `);
@@ -368,6 +379,46 @@ async function main() {
 
   if (command === 'run') {
     await runJobs(args);
+    return;
+  }
+
+  if (command === 'probe') {
+    const url = args._[0];
+    if (!url) throw new Error('Usage: sengkrep probe <url> [--json]');
+
+    const scraper = sengkrep.create({
+      logLevel: 'error',
+      proxies: args.proxy ? [args.proxy] : [],
+      identity: args['no-identity'] ? undefined : true,
+      blocks: true,
+    });
+
+    let result;
+    try {
+      result = await scraper.probe(url, {
+        request: typeof args.method === 'string' ? { method: args.method } : {},
+      });
+    } finally {
+      scraper.close();
+    }
+
+    if (args.json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    } else {
+      const verdict = result.verdict;
+      const lines = [
+        `url         ${result.finalUrl}`,
+        `status      ${result.status}`,
+        `blocked     ${result.blocked ? 'yes' : 'no'}`,
+        `vendor      ${verdict.vendorName ?? verdict.vendor ?? 'none'}`,
+        `kind        ${verdict.kind ?? 'none'}`,
+        `confidence  ${verdict.confidence}`,
+        `signals     ${verdict.signals.length > 0 ? verdict.signals.join(', ') : 'none'}`,
+      ];
+      process.stdout.write(`${lines.join('\n')}\n`);
+    }
+
+    if (result.blocked) process.exitCode = 2;
     return;
   }
 

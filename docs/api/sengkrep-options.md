@@ -49,6 +49,10 @@ Category: Options · Source: [index.d.ts](../../index.d.ts) · [All exports](./R
 | `renderer` | `RendererInput` | no |  |
 | `render` | `boolean` | no |  |
 | `singleFlight` | `SingleFlightOptions \| boolean` | no |  |
+| `blocks` | `BlockOptions \| boolean` | no |  |
+| `identity` | `IdentityPoolOptions \| boolean` | no |  |
+| `identities` | `Array<Identity \| IdentitySpec>` | no |  |
+| `identitySession` | `string` | no |  |
 | `scheduler` | `SchedulerOptions \| boolean` | no |  |
 | `robotsTtl` | `number` | no |  |
 | `tempFileTtl` | `number` | no |  |
@@ -60,6 +64,7 @@ Category: Options · Source: [index.d.ts](../../index.d.ts) · [All exports](./R
 
 - [AdaptiveThrottleOptions](./adaptive-throttle-options.md)
 - [AuthOptions](./auth-options.md)
+- [BlockOptions](./block-options.md)
 - [CacheOptions](./cache-options.md)
 - [CircuitBreakerOptions](./circuit-breaker-options.md)
 - [ComplianceOptions](./compliance-options.md)
@@ -68,6 +73,9 @@ Category: Options · Source: [index.d.ts](../../index.d.ts) · [All exports](./R
 - [DiffOptions](./diff-options.md)
 - [FingerprintOptions](./fingerprint-options.md)
 - [HealthOptions](./health-options.md)
+- [Identity](./identity.md)
+- [IdentityPoolOptions](./identity-pool-options.md)
+- [IdentitySpec](./identity-spec.md)
 - [ObservabilityOptions](./observability-options.md)
 - [RateLimitOptions](./rate-limit-options.md)
 - [RedirectPolicyOptions](./redirect-policy-options.md)

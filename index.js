@@ -39,6 +39,9 @@ const { inferSchema, inferFields, detectRepeatingContainers } = require('./src/m
 const { DistributedQueue, MemoryAdapter }  = require('./src/modules/DistributedQueue');
 const AdaptiveThrottle                     = require('./src/modules/AdaptiveThrottle');
 const SingleFlight                         = require('./src/modules/SingleFlight');
+const { BlockDetector, BlockError }        = require('./src/modules/BlockDetector');
+const { Identity, IdentityPool }            = require('./src/modules/Identity');
+const { query: jsonPathQuery, isJsonPath }  = require('./src/utils/jsonpath');
 const Doctor                               = require('./src/modules/Doctor');
 const Scheduler                            = require('./src/modules/Scheduler');
 const JobStore                             = require('./src/modules/JobStore');
@@ -129,6 +132,13 @@ sengkrep.MemoryAdapter    = MemoryAdapter;
 sengkrep.Transport        = Transport;
 sengkrep.AdaptiveThrottle = AdaptiveThrottle;
 sengkrep.SingleFlight     = SingleFlight;
+sengkrep.BlockDetector    = BlockDetector;
+sengkrep.BlockError       = BlockError;
+sengkrep.Identity         = Identity;
+sengkrep.IdentityPool     = IdentityPool;
+sengkrep.jsonPath         = jsonPathQuery;
+sengkrep.isJsonPath       = isJsonPath;
+sengkrep.probe            = (url, options) => _default.probe(url, options);
 sengkrep.Doctor           = Doctor;
 sengkrep.doctor           = (options) => Doctor(options);
 sengkrep.Scheduler        = Scheduler;
@@ -194,6 +204,7 @@ sengkrep.errors = {
   ProxyError,
   SecurityError,
   CircuitOpenError,
+  BlockError,
 };
 
 module.exports = sengkrep;

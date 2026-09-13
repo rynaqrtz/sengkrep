@@ -9,6 +9,8 @@ const STRATEGIES = {
   default: { baseDelay: 1000, multiplier: 1.5, maxDelay: 15000 },
 };
 
+const BLOCK_STRATEGY = { baseDelay: 1500, multiplier: 2.0, maxDelay: 20000 };
+
 class Retry {
   constructor(options = {}) {
     this.max              = options.max              ?? 3;
@@ -19,6 +21,7 @@ class Retry {
     this.respectRetryAfter = options.respectRetryAfter ?? true;
     this.maxRetryAfter     = options.maxRetryAfter     ?? 5 * 60 * 1000;
     this.budgetMs          = options.budgetMs          ?? null;
+    this.retryOnBlock      = options.retryOnBlock      ?? true;
     this.onRetry          = options.onRetry          ?? null;
   }
 
@@ -34,7 +37,7 @@ class Retry {
       return { ms: Math.min(err.retryAfterMs, this.maxRetryAfter), usedRetryAfter: true };
     }
 
-    const s   = STRATEGIES[err.status] ?? STRATEGIES.default;
+    const s   = err.code === 'BLOCKED' ? BLOCK_STRATEGY : (STRATEGIES[err.status] ?? STRATEGIES.default);
     const raw = s.baseDelay * Math.pow(s.multiplier, attempt - 1);
     return { ms: Math.round(this._applyJitter(Math.min(raw, s.maxDelay))), usedRetryAfter: false };
   }
@@ -42,6 +45,7 @@ class Retry {
   _shouldRetry(err, retryCount) {
     if (err.code === 'CANCELED') return false;
     if (retryCount > this.max) return false;
+    if (err.code === 'BLOCKED' && err.retryable && this.retryOnBlock) return true;
     if (err.code === 'NETWORK_ERROR' && this.retryOnNetwork)  return true;
     if (err.code === 'TIMEOUT'       && this.retryOnTimeout)  return true;
     if (err.code === 'TRUNCATED_RESPONSE')                    return true;

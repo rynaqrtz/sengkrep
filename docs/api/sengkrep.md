@@ -44,6 +44,9 @@ new Sengkrep(options?: SengkrepOptions)
 | `graphql` | `GraphQLClient` | yes |  |
 | `transport` | `Transport` | yes |  |
 | `singleFlight` | `SingleFlight` | yes |  |
+| `blockDetector` | `BlockDetector \| null` | yes |  |
+| `blockMode` | `'report' \| 'retry' \| 'throw' \| null` | yes |  |
+| `identityPool` | `IdentityPool \| null` | yes |  |
 | `scheduler` | `Scheduler \| null` | yes |  |
 | `adaptive` | `AdaptiveThrottle \| null` | yes |  |
 | `contentDedup` | `ContentDedup \| null` | yes |  |
@@ -57,6 +60,7 @@ new Sengkrep(options?: SengkrepOptions)
 | --- | --- | --- | --- |
 | `fetch` | `url: string, options?: { params?: Record<string, unknown>; request?: RequestConfig }` | `Promise<RawResponse>` |  |
 | `load` | `html: string` | `CheerioAPI` |  |
+| `probe` | `url: string, options?: { request?: RequestConfig; detector?: BlockDetector }` | `Promise<ProbeResult>` |  |
 | `extract` | `url: string, schema: Schema<T>, options?: ExtractOptions` | `Promise<ExtractResult<T>>` |  |
 | `batch` | `urls: string[], schema: Schema<T>, options?: BatchOptions` | `Promise<BatchResult<T>[]>` |  |
 | `stream` | `urls: string[], schema: Schema<T>, options?: BatchOptions` | `AsyncGenerator<BatchResult<T>>` |  |
@@ -85,6 +89,7 @@ new Sengkrep(options?: SengkrepOptions)
 - [AuthManager](./auth-manager.md)
 - [BatchOptions](./batch-options.md)
 - [BatchResult](./batch-result.md)
+- [BlockDetector](./block-detector.md)
 - [Cache](./cache.md)
 - [CircuitBreaker](./circuit-breaker.md)
 - [ComplianceOptions](./compliance-options.md)
@@ -102,12 +107,14 @@ new Sengkrep(options?: SengkrepOptions)
 - [FormHandler](./form-handler.md)
 - [GraphQLClient](./graph-qlclient.md)
 - [HealthMonitor](./health-monitor.md)
+- [IdentityPool](./identity-pool.md)
 - [Incremental](./incremental.md)
 - [Interceptors](./interceptors.md)
 - [Observability](./observability.md)
 - [ObservabilityReport](./observability-report.md)
 - [PaginationConfig](./pagination-config.md)
 - [PluginSystem](./plugin-system.md)
+- [ProbeResult](./probe-result.md)
 - [ProxyRotator](./proxy-rotator.md)
 - [RateLimiter](./rate-limiter.md)
 - [RawResponse](./raw-response.md)

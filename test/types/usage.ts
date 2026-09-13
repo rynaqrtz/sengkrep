@@ -1,5 +1,7 @@
 import sengkrep from '../../index';
 import type {
+  BlockDetector as BlockDetectorType,
+  BlockVerdict,
   CacheLookup,
   CacheStats,
   CaptureCookie,
@@ -13,6 +15,9 @@ import type {
   CdpRenderResult,
   CookieJar,
   DoctorReport,
+  Identity,
+  IdentityPool,
+  ProbeResult,
   JobRecord,
   PaginationNext,
   RawResponse,
@@ -202,3 +207,36 @@ async function healthCheck(): Promise<DoctorReport> {
 }
 
 void healthCheck;
+
+async function surviveBlocks(): Promise<ProbeResult> {
+  const client = sengkrep.create({
+    blocks: { mode: 'retry', minConfidence: 'medium' },
+    identity: { size: 4, rotation: 'sticky', rotateOnBlock: true },
+    identities: [{ locale: 'id-ID', browser: 'chrome' }],
+    identitySession: 'catalog',
+  });
+
+  const pool: IdentityPool | null = client.identityPool;
+  const identity: Identity | null = pool ? pool.get('seed') : null;
+  if (identity) {
+    void identity.headers;
+    void identity.toJSON().timezone;
+    pool?.rotate('seed');
+    void pool?.stats().rotations;
+  }
+
+  const detector: BlockDetectorType = new sengkrep.BlockDetector({ minConfidence: 'low' });
+  const verdict: BlockVerdict = detector.detect({ status: 403, headers: { server: 'cloudflare' }, body: 'Just a moment...' });
+  void verdict.vendorName;
+  void verdict.kind;
+
+  const result: ProbeResult = await client.probe('https://example.com');
+  void result.blocked;
+  void result.verdict.signals;
+  void sengkrep.jsonPath<number>({ a: [1, 2] }, '$.a[*]');
+  void sengkrep.isJsonPath('$.a');
+  client.close();
+  return result;
+}
+
+void surviveBlocks;
