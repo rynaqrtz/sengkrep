@@ -2,7 +2,7 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 5.3.1
 
 ### Fixed
 
