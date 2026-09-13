@@ -4,8 +4,22 @@
   "description": "A reliability layer for web scraping in Node.js: unified HTTP/1.1 + HTTP/2 transport, coherent browser fingerprints, adaptive throttling, schema validation, selector health monitoring, content dedup, circuit breaker, resumable crawling, distributed queues, pluggable storage, robots.txt compliance, network capture (DevTools Protocol, HAR, local proxy, Playwright), and full TypeScript definitions.",
   "main": "index.js",
   "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "src",
+    "bin"
+  ],
   "bin": {
     "sengkrep": "./bin/sengkrep.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rynaqrtz/sengkrep.git"
+  },
+  "homepage": "https://github.com/rynaqrtz/sengkrep#readme",
+  "bugs": {
+    "url": "https://github.com/rynaqrtz/sengkrep/issues"
   },
   "keywords": [
     "web-scraping",
