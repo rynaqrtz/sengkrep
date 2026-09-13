@@ -7,6 +7,9 @@ const path         = require('path');
 const { execSync } = require('child_process');
 
 let flakyCount = 0;
+let counterHits = 0;
+let swrVersion = 0;
+let swrFlakyHits = 0;
 
 const CERT_PATH = path.join(__dirname, '.cert.pem');
 const KEY_PATH  = path.join(__dirname, '.key.pem');
@@ -118,6 +121,55 @@ function handler(req, res) {
       res.end('<h1>slow</h1>');
     }, 3000);
     return;
+  }
+
+  if (url.pathname === '/counter/reset') {
+    counterHits = 0;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ count: 0 }));
+  }
+
+  if (url.pathname === '/counter') {
+    counterHits += 1;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ count: counterHits }));
+  }
+
+  if (url.pathname === '/counter/read') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ count: counterHits }));
+  }
+
+  if (url.pathname === '/counter/slow') {
+    counterHits += 1;
+    const seen = counterHits;
+    return setTimeout(() => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ count: seen }));
+    }, 120);
+  }
+
+  if (url.pathname === '/swr/reset') {
+    swrVersion = 0;
+    swrFlakyHits = 0;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ version: 0 }));
+  }
+
+  if (url.pathname === '/swr') {
+    swrVersion += 1;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ version: swrVersion }));
+  }
+
+  if (url.pathname === '/swr-flaky') {
+    swrFlakyHits += 1;
+    if (swrFlakyHits > 1) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'revalidation failed' }));
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ version: 1 }));
   }
 
   if (url.pathname === '/flaky') {

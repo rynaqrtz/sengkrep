@@ -12,6 +12,7 @@ const FILES = [
   '08-network-capture.js',
   '09-security-redirect.js',
   '10-renderer-and-codegen.js',
+  '11-single-flight-and-cache.js',
 ];
 
 let failed = 0;

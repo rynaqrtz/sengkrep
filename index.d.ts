@@ -102,11 +102,16 @@ export interface RawResponse {
   url: string;
   body: string;
   binary: boolean;
+  bodyBuffer?: Buffer | null;
   streamed: boolean;
   filePath: string | null;
   fromCache: boolean;
+  stale?: boolean;
   notModified: boolean;
   charset?: string;
+  sniffedType?: string | null;
+  size?: number | null;
+  rateLimit?: RateLimitInfo | null;
 }
 
 export interface RequestConfig {
@@ -231,6 +236,39 @@ export interface CacheOptions {
   backend?: StorageBackend;
   file?: string;
   table?: string;
+  staleWhileRevalidate?: boolean;
+  staleTtl?: number;
+}
+
+export interface CacheLookup {
+  data: RawResponse;
+  stale: boolean;
+  age: number;
+}
+
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  sets: number;
+  evictions: number;
+  stale: number;
+  revalidations: number;
+  size: number;
+  revalidating: number;
+  hitRate: number;
+}
+
+export interface SingleFlightOptions {
+  enabled?: boolean;
+  maxKeys?: number;
+}
+
+export interface SingleFlightStats {
+  flights: number;
+  joins: number;
+  bypassed: number;
+  failures: number;
+  inflight: number;
 }
 
 export type StorageBackend = 'file' | 'memory' | 'sqlite';
@@ -409,6 +447,7 @@ export interface SengkrepOptions {
   compliance?: ComplianceOptions | false;
   renderer?: RendererInput;
   render?: boolean;
+  singleFlight?: SingleFlightOptions | boolean;
   robotsTtl?: number;
   tempFileTtl?: number;
   connectTimeout?: number;
@@ -519,14 +558,32 @@ export class SchemaValidator {
   validateMany(items: Record<string, unknown>[]): (ValidationReport & { index: number })[];
 }
 
+export class SingleFlight {
+  constructor(options?: SingleFlightOptions | boolean);
+  enabled: boolean;
+  maxKeys: number;
+  readonly size: number;
+  key(method: string, url: string, body?: string | null): string;
+  run<T>(key: string, fn: () => Promise<T> | T): Promise<T>;
+  stats(): SingleFlightStats;
+  clear(): void;
+}
+
 export class Cache {
   constructor(options?: CacheOptions);
+  ttl: number;
+  staleTtl: number;
+  staleWhileRevalidate: boolean;
   get(url: string, method?: string): unknown;
-  set(url: string, data: unknown, method?: string): void;
+  lookup(url: string, method?: string): CacheLookup | null;
+  set(url: string, data: unknown, method?: string, options?: { ttl?: number }): void;
+  beginRevalidate(url: string, method?: string): boolean;
+  endRevalidate(url: string, method?: string): void;
+  isRevalidating(url: string, method?: string): boolean;
   has(url: string, method?: string): boolean;
   delete(url: string, method?: string): void;
   clear(): void;
-  stats(): { hits: number; misses: number; sets: number; size: number; hitRate: number };
+  stats(): CacheStats;
 }
 
 export class CookieJar {
@@ -1319,6 +1376,7 @@ export class Sengkrep {
   wordpress: WordPress;
   graphql: GraphQLClient;
   transport: Transport;
+  singleFlight: SingleFlight;
   adaptive: AdaptiveThrottle | null;
   contentDedup: ContentDedup | null;
   compliance: ComplianceOptions | null;
@@ -1351,6 +1409,7 @@ export class Sengkrep {
 
   getObservabilityReport(): ObservabilityReport;
   saveHar(filePath: string): void;
+  flush(): Promise<number>;
   close(): void;
 }
 
@@ -1445,6 +1504,7 @@ export interface SengkrepStatic {
   Http2Fetcher: typeof Http2Fetcher;
   Transport: typeof Transport;
   AdaptiveThrottle: typeof AdaptiveThrottle;
+  SingleFlight: typeof SingleFlight;
   ContentDedup: typeof ContentDedup;
   SqliteStorage: typeof SqliteStorage;
   Storage: typeof Storage;

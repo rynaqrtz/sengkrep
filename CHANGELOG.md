@@ -2,6 +2,20 @@
 
 All notable changes to `sengkrep` are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 5.4.0
+
+### Added
+
+- `singleFlight`. Concurrent requests for the same method, URL and body now share one outbound request, and an error is shared the same way. Off by default. `SingleFlight` is exported on its own, with `key()`, `run()`, `stats()` and `clear()`.
+- `cache.staleWhileRevalidate` and `cache.staleTtl`. A cache entry past its TTL is served immediately with `stale: true` while a background request refreshes it. Only one revalidation runs per key, even under a burst of concurrent reads, and a failed revalidation keeps the stale entry in place.
+- `cache.lookup()` returns `{ data, stale, age }` instead of the raw entry, and `cache.stats()` reports `stale`, `revalidations`, `revalidating` and a `hitRate` that counts stale serves as hits.
+- `scraper.flush()` waits for pending background revalidations and resolves to how many were waiting.
+- `res.stale` on a response, set only when a stale cache entry was served.
+
+### Changed
+
+- `Cache.get()` still returns the stored value, while `lookup()` now carries the freshness information a caller needs to decide whether to revalidate.
+
 ## 5.3.1
 
 ### Fixed

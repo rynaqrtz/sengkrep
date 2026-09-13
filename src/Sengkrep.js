@@ -38,6 +38,7 @@ const { detectNextLink, detectTotalPages }  = require('./modules/PaginationDetec
 const { inferSchema }                       = require('./modules/SchemaInference');
 const { DistributedQueue, MemoryAdapter }   = require('./modules/DistributedQueue');
 const AdaptiveThrottle                     = require('./modules/AdaptiveThrottle');
+const SingleFlight                         = require('./modules/SingleFlight');
 const ContentDedup                         = require('./modules/ContentDedup');
 const Logger                               = require('./utils/logger');
 const { exportData }                       = require('./utils/exporter');
@@ -145,6 +146,9 @@ class Sengkrep {
 
     this.renderer      = this._resolveRenderer(options.renderer);
     this.renderEnabled = options.render === true;
+
+    this.singleFlight = new SingleFlight(options.singleFlight ?? {});
+    this._background  = new Set();
 
     this.transport.sweepStreamFiles(options.tempFileTtl ?? 3600000);
 
@@ -316,19 +320,51 @@ class Sengkrep {
     if (this.circuitBreaker) this.circuitBreaker.assertCanRequest(hostname);
 
     if (this.cache) {
-      const cached = this.cache.get(resolvedUrl, method);
-      if (cached) {
-        this._assertCompliance(cached, resolvedUrl);
-        this.logger.debug(`[cache] HIT ${resolvedUrl}`);
-        return { ...cached, fromCache: true };
+      const found = this.cache.lookup(resolvedUrl, method);
+      if (found) {
+        this._assertCompliance(found.data, resolvedUrl);
+        this.logger.debug(`[cache] ${found.stale ? 'STALE' : 'HIT'} ${resolvedUrl}`);
+        if (found.stale) {
+          this._revalidate(resolvedUrl, { method, hostname, reqOptions, pinnedLookup, onRedirect });
+        }
+        return { ...found.data, fromCache: true, ...(found.stale ? { stale: true } : {}) };
       }
     }
 
+    const context = { method, hostname, reqOptions, pinnedLookup, onRedirect };
+    const execute = async () => {
+      const res = await this._performRequest(resolvedUrl, context);
+      if (this.cache) this.cache.set(resolvedUrl, res, method);
+      return res;
+    };
+
+    const result = this.singleFlight.enabled
+      ? await this.singleFlight.run(this.singleFlight.key(method, resolvedUrl, reqOptions.body ?? null), execute)
+      : await execute();
+
+    this._assertCompliance(result, resolvedUrl);
+    this._audit({
+      ts: new Date().toISOString(),
+      url: resolvedUrl,
+      method,
+      status: result.status,
+      purpose: this.compliance?.purpose ?? null,
+    });
+
+    if (this.incremental && !result.notModified) {
+      this.incremental.record(resolvedUrl, result.headers, null);
+    }
+
+    return result;
+  }
+
+  async _performRequest(resolvedUrl, context) {
+    const { hostname, reqOptions, pinnedLookup, onRedirect } = context;
     const conditionalHeaders = this.incremental ? this.incremental.getConditionalHeaders(resolvedUrl) : {};
 
     let attemptedRefresh = false;
 
-    const result = await this.retry.run(async (attempt) => {
+    return this.retry.run(async (attempt) => {
       const release         = this.rateLimiter.enabled ? await this.rateLimiter.acquire(hostname) : null;
       const releaseAdaptive = this.adaptive ? await this.adaptive.acquire(hostname) : null;
       const proxy           = this.proxyRotator.enabled ? this.proxyRotator.next(hostname) : null;
@@ -374,23 +410,36 @@ class Sengkrep {
         if (releaseAdaptive) releaseAdaptive();
       }
     });
+  }
 
-    this._assertCompliance(result, resolvedUrl);
-    this._audit({
-      ts: new Date().toISOString(),
-      url: resolvedUrl,
-      method,
-      status: result.status,
-      purpose: this.compliance?.purpose ?? null,
-    });
+  _revalidate(resolvedUrl, context) {
+    if (!this.cache || !this.cache.beginRevalidate(resolvedUrl, context.method)) return;
 
-    if (this.incremental && !result.notModified) {
-      this.incremental.record(resolvedUrl, result.headers, null);
-    }
+    const pending = (async () => {
+      try {
+        const fresh = await this._performRequest(resolvedUrl, context);
+        this.cache.set(resolvedUrl, fresh, context.method);
+        if (this.incremental && !fresh.notModified) {
+          this.incremental.record(resolvedUrl, fresh.headers, null);
+        }
+        this.logger.debug(`[cache] REVALIDATED ${resolvedUrl}`);
+      } catch (err) {
+        this.observability.recordFailure(resolvedUrl, err);
+        this.logger.debug(`[cache] revalidation failed for ${resolvedUrl}: ${err.message}`);
+      } finally {
+        this.cache.endRevalidate(resolvedUrl, context.method);
+      }
+    })();
 
-    if (this.cache) this.cache.set(resolvedUrl, result, method);
+    this._background.add(pending);
+    pending.then(() => this._background.delete(pending));
+  }
 
-    return result;
+  async flush() {
+    if (this._background.size === 0) return 0;
+    const pending = [...this._background];
+    await Promise.allSettled(pending);
+    return pending.length;
   }
 
   async extract(url, schema, options = {}) {
@@ -674,10 +723,16 @@ class Sengkrep {
       url:         res.url,
       body:        res.body,
       binary:      res.binary ?? false,
+      bodyBuffer:  res.bodyBuffer ?? null,
       streamed:    res.streamed ?? false,
       filePath:    res.filePath ?? null,
       fromCache:   res.fromCache === true,
+      stale:       res.stale === true,
       notModified: res.notModified === true,
+      charset:     res.charset,
+      sniffedType: res.sniffedType ?? null,
+      size:        res.size ?? null,
+      rateLimit:   res.rateLimit ?? null,
     };
   }
 

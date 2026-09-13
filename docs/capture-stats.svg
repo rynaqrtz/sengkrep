@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="452" viewBox="0 0 940 452" role="img" aria-label="Network capture measured end to end">
+<rect x="0.5" y="0.5" width="939" height="451" rx="12" fill="#ffffff" stroke="#d8dee4"/>
+<text x="24" y="36" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#1f2328">Network capture, measured end to end</text>
+<text x="24" y="58" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" fill="#57606a">A CaptureProxy in front of the fixture server, then analyzed by NetworkCapture. Regenerate with node docs/charts.js</text>
+<rect x="24" y="84" width="212.5" height="92" rx="8" fill="#f6f8fa" stroke="#d8dee4"/>
+<text x="38" y="122" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#1f2328">13</text>
+<text x="38" y="144" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#1f2328">Requests captured</text>
+<text x="38" y="161" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">13 URLs requested</text>
+<rect x="250.5" y="84" width="212.5" height="92" rx="8" fill="#f6f8fa" stroke="#d8dee4"/>
+<text x="264.5" y="122" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#1f2328">11</text>
+<text x="264.5" y="144" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#1f2328">Endpoints found</text>
+<text x="264.5" y="161" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">3 of them carried JSON</text>
+<rect x="477" y="84" width="212.5" height="92" rx="8" fill="#f6f8fa" stroke="#d8dee4"/>
+<text x="491" y="122" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#1f2328">2</text>
+<text x="491" y="144" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#1f2328">Folded into templates</text>
+<text x="491" y="161" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">/items/17, /items/8321 and /items/9001 share /items/:id</text>
+<rect x="703.5" y="84" width="212.5" height="92" rx="8" fill="#f6f8fa" stroke="#d8dee4"/>
+<text x="717.5" y="122" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#1f2328">1989</text>
+<text x="717.5" y="144" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#1f2328">Response bytes recorded</text>
+<text x="717.5" y="161" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">9 bodies kept, 13 header sets</text>
+<text x="24" y="220" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1f2328">Requests per endpoint</text>
+<text x="24" y="252" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">GET /items/:id</text>
+<rect x="190" y="242" width="654" height="13" rx="4" fill="#0969da"/>
+<text x="853" y="252" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">3</text>
+<text x="24" y="278" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">GET /data.csv</text>
+<rect x="190" y="268" width="218" height="13" rx="4" fill="#0969da"/>
+<text x="417" y="278" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">1</text>
+<text x="24" y="304" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">GET /feed.xml</text>
+<rect x="190" y="294" width="218" height="13" rx="4" fill="#0969da"/>
+<text x="417" y="304" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">1</text>
+<text x="24" y="330" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">GET /html</text>
+<rect x="190" y="320" width="218" height="13" rx="4" fill="#0969da"/>
+<text x="417" y="330" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">1</text>
+<text x="24" y="356" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">GET /inference-list</text>
+<rect x="190" y="346" width="218" height="13" rx="4" fill="#0969da"/>
+<text x="417" y="356" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">1</text>
+<text x="24" y="382" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">GET /items</text>
+<rect x="190" y="372" width="218" height="13" rx="4" fill="#0969da"/>
+<text x="417" y="382" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2328">1</text>
+<text x="24" y="436" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Statuses: 200 x9, 404 x4. Every entry carries 23 normalized fields</text>
+</svg>
